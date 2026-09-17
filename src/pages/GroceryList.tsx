@@ -1,0 +1,100 @@
+import Lucide from "@react-native-vector-icons/lucide";
+import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
+import Decimal from "decimal.js";
+import { ScrollView, Text, TextInput, TouchableNativeFeedback, TouchableOpacity, View } from "react-native";
+
+
+function Grocery(props: {
+    name: string,
+    count: number,
+    budget: Decimal,
+    spent: Decimal
+}) {
+    const percentage = (1-((props.budget.sub(props.spent)).div(props.budget).toNumber())) * 100;
+
+    return (
+        <TouchableNativeFeedback>
+            <View className="bg-gray-100 rounded-xl border-2 border-gray-400 p-4 px-6 shadow-sm shadow-black elevation-xl flex-row justify-between">
+                <View className="flex-1 gap-4">
+                    <View>
+                        <Text className="font-bold text-xl">{props.name}</Text>
+                        <Text className="color-gray-400">{props.count} items</Text>
+                    </View>
+
+                    <View className="gap-1">
+                        <View className="flex-row gap-40">
+                            <View className="flex-row gap-3">
+                                <Text className="color-gray-400">Budget:</Text> 
+                                <Text className="font-semibold color-green-600">₱{props.budget.toFixed(2)}</Text>
+                            </View>
+
+                            <View className="flex-row gap-3">
+                                <Text className="color-gray-400">Spent:</Text> 
+                                <Text className="color-red-600 font-semibold">₱{props.spent.toFixed(2)}</Text>
+                            </View>
+                        </View>
+                        <View className="h-2 bg-gray-300 w-full rounded">
+                            <View className="h-2 bg-green-600 rounded" style={{
+                                width: `${percentage}%`
+                            }}/>
+                        </View>
+                    </View>
+                </View>
+
+                <View className="left-4 flex-col justify-between">
+                    <Lucide name="ellipsis-vertical" size={16}/>
+                    <Text className="top-4 text-sm font-bold">{percentage.toFixed(0)}%</Text>
+                </View>
+            </View>
+        </TouchableNativeFeedback>
+    );
+}
+
+function GroceryList() {
+    return (
+        <View className="px-10 pt-10 gap-8 flex-1">
+            <View className="flex flex-row justify-between">
+                <View>
+                    <Text className="font-bold color-green-600 text-2xl">Grocewatch</Text>
+                    <Text>Welcome, User!</Text>
+                </View>
+                <TouchableOpacity className="w-10 h-10 rounded justify-center items-center">
+                    <Lucide name="bell" size={30}/>
+                </TouchableOpacity>
+            </View>
+
+            <View> 
+                <Text className="font-bold text-2xl">My Grocery List</Text>
+
+                {/* Search Bar */}
+                <View className="flex-row items-center gap-2 justify-center">
+                    <View className="rounded-2xl bg-gray-100 px-4 border-2 border-gray-400 shadow-sm shadow-black elevation-2xl flex-row items-center gap-2 flex-1">
+                        <MaterialDesignIcons name="magnify" color="#9ca3af"/>
+                        <TextInput
+                            placeholderTextColor="#9ca3af"
+                            className="w-full font-bold"
+                            placeholder="Search grocery lists..."/>
+                    </View>
+
+                    <TouchableOpacity className="rounded-lg bg-green-300 border-green-600 border-2 border-solid shadow-sm shadow-black elevation-2xl">
+                        <MaterialDesignIcons name="plus" size={30} color="#16a34a"/>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            <ScrollView contentContainerClassName="gap-4" className="h-[70%] rounded-xl">
+                <Grocery name="Weekly Grocery" count={28} budget={new Decimal(1500)} spent={new Decimal(820)}/>
+                <Grocery name="Monthly Grocery" count={32} budget={new Decimal(3000)} spent={new Decimal(1200)}/>
+                <Grocery name="Monthly Grocery" count={32} budget={new Decimal(3000)} spent={new Decimal(1200)}/>
+                <Grocery name="Monthly Grocery" count={32} budget={new Decimal(3000)} spent={new Decimal(1200)}/>
+                <Grocery name="Vegetable Only" count={10} budget={new Decimal(600)} spent={new Decimal(120)}/>
+                <Grocery name="Party Supplies" count={15} budget={new Decimal(1000)} spent={new Decimal(450)}/>
+                <Grocery name="Party Supplies" count={15} budget={new Decimal(1000)} spent={new Decimal(450)}/>
+                <Grocery name="Party Supplies" count={15} budget={new Decimal(1000)} spent={new Decimal(450)}/>
+                <Grocery name="Party Supplies" count={15} budget={new Decimal(1000)} spent={new Decimal(450)}/>
+            </ScrollView>
+        </View>
+    )
+}
+
+export default GroceryList;
