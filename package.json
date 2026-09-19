@@ -24,6 +24,7 @@
     "react-native": "0.87.1",
     "react-native-fs": "^2.20.0",
     "react-native-gemma-agent": "^0.3.0",
+    "react-native-gesture-handler": "^3.3.0",
     "react-native-reanimated": "^4.6.0",
     "react-native-safe-area-context": "^5.9.1",
     "react-native-screens": "^4.28.0",

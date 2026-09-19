@@ -23,27 +23,27 @@ function NavigationBar(props: {
     const name = state?.name ?? "List";
 
     return (
-        <View className="flex-row justify-around items-center absolute bottom-0 bg-white shadow-2xl shadow-black rounded-2xl p-8" style={{
+        <View className="flex-row justify-around items-center absolute bottom-0 bg-white shadow-2xl shadow-black rounded-2xl p-4" style={{
             paddingBottom: insets.bottom > 0 ? insets.bottom : 16
         }}>
-            <TouchableOpacity className="items-center justify-center flex-1" onPress={() => navigation.navigate("List")}>
-                <FontAwesome5 name="clipboard-list" iconStyle="solid" size={40} color={name === "List" ? '#16a34a' : null}/>
-                <Text className="font-bold text-lg" style={{color: name === "List" ? "#16a34a" : null}}>{"List"}</Text>
+            <TouchableOpacity className="items-center justify-center flex-1 gap-1" onPress={() => navigation.navigate("List")}>
+                <FontAwesome5 name="clipboard-list" iconStyle="solid" size={35} color={name === "List" ? '#16a34a' : null}/>
+                <Text className="font-bold text-md" style={{color: name === "List" ? "#16a34a" : null}}>{"List"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center justify-center flex-1" onPress={() => navigation.navigate("Products")}>
-                <FontAwesome5 name="shopping-basket" iconStyle="solid" size={40} color={name === "Products" ? '#16a34a' : null}/>
-                <Text className="font-bold text-lg" style={{color: name === "Products" ? "#16a34a" : null}}>{"Products"}</Text>
+            <TouchableOpacity className="items-center justify-center flex-1 gap-1" onPress={() => navigation.navigate("Products")}>
+                <FontAwesome5 name="shopping-basket" iconStyle="solid" size={35} color={name === "Products" ? '#16a34a' : null}/>
+                <Text className="font-bold text-md" style={{color: name === "Products" ? "#16a34a" : null}}>{"Products"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center justify-center flex-1" onPress={() => navigation.navigate("AIChat")}>
-                <FontAwesome5 name="robot" iconStyle="solid" size={40} color={name === "AIChat" ? '#16a34a' : null}/>
-                <Text className="font-bold text-lg" style={{color: name === "AIChat" ? "#16a34a" : null}}>{"AI Chat"}</Text>
+            <TouchableOpacity className="items-center justify-center flex-1 gap-1" onPress={() => navigation.navigate("AIChat")}>
+                <FontAwesome5 name="robot" iconStyle="solid" size={35} color={name === "AIChat" ? '#16a34a' : null}/>
+                <Text className="font-bold text-md" style={{color: name === "AIChat" ? "#16a34a" : null}}>{"AI Chat"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center justify-center flex-1" onPress={() => navigation.navigate("Profile")}>
-                <FontAwesome5 name="user-circle" iconStyle="solid" size={40} color={name === "Profile" ? '#16a34a' : null}/>
-                <Text className="font-bold text-lg" style={{color: name === "Profile" ? "#16a34a" : null}}>{"Profile"}</Text>
+            <TouchableOpacity className="items-center justify-center flex-1 gap-1" onPress={() => navigation.navigate("Profile")}>
+                <FontAwesome5 name="user-circle" iconStyle="solid" size={35} color={name === "Profile" ? '#16a34a' : null}/>
+                <Text className="font-bold text-md" style={{color: name === "Profile" ? "#16a34a" : null}}>{"Profile"}</Text>
             </TouchableOpacity>
         </View>
     )

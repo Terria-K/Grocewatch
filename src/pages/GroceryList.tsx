@@ -1,7 +1,10 @@
 import Lucide from "@react-native-vector-icons/lucide";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import Decimal from "decimal.js";
-import { ScrollView, Text, TextInput, TouchableNativeFeedback, TouchableOpacity, View } from "react-native";
+import { Dimensions, ScrollView, Text, TouchableNativeFeedback, TouchableOpacity, View } from "react-native";
+import SearchBar from "../components/SearchBar";
+import { useRef } from "react";
+import BottomSheet, { BottomSheetHandle } from "../components/BottomSheet";
 
 
 function Grocery(props: {
@@ -22,7 +25,7 @@ function Grocery(props: {
                     </View>
 
                     <View className="gap-1">
-                        <View className="flex-row gap-40">
+                        <View className="flex-row justify-between max-w-96">
                             <View className="flex-row gap-3">
                                 <Text className="color-gray-400">Budget:</Text> 
                                 <Text className="font-semibold color-green-600">₱{props.budget.toFixed(2)}</Text>
@@ -50,39 +53,44 @@ function Grocery(props: {
     );
 }
 
+const { height: screenHeight} = Dimensions.get('screen');
+
 function GroceryList() {
+    const bottomSheetRef = useRef<BottomSheetHandle>(null);
+
     return (
-        <View className="px-10 pt-10 gap-8 flex-1">
+        <>
+        <View className="bg-green-600 h-32 absolute top-0 left-0 right-0 z-0 rounded-b-[30%]" />
+
+        <View className="px-4 pt-10 gap-8 flex-1">
             <View className="flex flex-row justify-between">
                 <View>
-                    <Text className="font-bold color-green-600 text-2xl">Grocewatch</Text>
+                    <Text className="font-bold text-white text-2xl">Grocewatch</Text>
                     <Text>Welcome, User!</Text>
                 </View>
                 <TouchableOpacity className="w-10 h-10 rounded justify-center items-center">
-                    <Lucide name="bell" size={30}/>
+                    <Lucide name="bell" size={25} color="#FFFFFF"/>
                 </TouchableOpacity>
             </View>
 
             <View> 
                 <Text className="font-bold text-2xl">My Grocery List</Text>
 
-                {/* Search Bar */}
                 <View className="flex-row items-center gap-2 justify-center">
-                    <View className="rounded-2xl bg-gray-100 px-4 border-2 border-gray-400 shadow-sm shadow-black elevation-2xl flex-row items-center gap-2 flex-1">
-                        <MaterialDesignIcons name="magnify" color="#9ca3af"/>
-                        <TextInput
-                            placeholderTextColor="#9ca3af"
-                            className="w-full font-bold"
-                            placeholder="Search grocery lists..."/>
-                    </View>
+                    <SearchBar placeholder="Search grocery lists..."/>
 
-                    <TouchableOpacity className="rounded-lg bg-green-300 border-green-600 border-2 border-solid shadow-sm shadow-black elevation-2xl">
+                    <TouchableOpacity className="rounded-lg bg-green-300 border-green-600 border-2 border-solid shadow-sm shadow-black elevation-2xl" 
+                        onPress={() => {
+                        if (bottomSheetRef.current) {
+                            bottomSheetRef.current.openSheet();
+                        }
+                    }}>
                         <MaterialDesignIcons name="plus" size={30} color="#16a34a"/>
                     </TouchableOpacity>
                 </View>
             </View>
 
-            <ScrollView contentContainerClassName="gap-4" className="h-[70%] rounded-xl">
+            <ScrollView contentContainerClassName="gap-4 pb-40" className="rounded-xl flex-1" showsVerticalScrollIndicator={false}>
                 <Grocery name="Weekly Grocery" count={28} budget={new Decimal(1500)} spent={new Decimal(820)}/>
                 <Grocery name="Monthly Grocery" count={32} budget={new Decimal(3000)} spent={new Decimal(1200)}/>
                 <Grocery name="Monthly Grocery" count={32} budget={new Decimal(3000)} spent={new Decimal(1200)}/>
@@ -93,7 +101,17 @@ function GroceryList() {
                 <Grocery name="Party Supplies" count={15} budget={new Decimal(1000)} spent={new Decimal(450)}/>
                 <Grocery name="Party Supplies" count={15} budget={new Decimal(1000)} spent={new Decimal(450)}/>
             </ScrollView>
+
+            <BottomSheet
+                ref={bottomSheetRef}
+                activeHeight={screenHeight}
+                backdropColor="rgba(0,0,0,0.5)"
+                backgroundColor="white"
+            >
+                <Text>Hi</Text>
+            </BottomSheet>
         </View>
+        </>
     )
 }
 
