@@ -1,7 +1,7 @@
 import FontAwesome5 from "@react-native-vector-icons/fontawesome5";
-import { NavigationContainerRefWithCurrent, useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type RootStackParamList = {
@@ -11,42 +11,73 @@ export type RootStackParamList = {
   AIChat: undefined;
 };
 
+type NavigationProp = {
+    currentRoute: keyof RootStackParamList
+}
 
-function NavigationBar(props: {
-    navigationRef: NavigationContainerRefWithCurrent<ReactNavigation.RootParamList>
-}) {
+
+function NavigationBar({ currentRoute }: NavigationProp) {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     
-    var state = props.navigationRef.getCurrentRoute() as unknown as {name: string} | undefined;
-
-    const name = state?.name ?? "List";
-
     return (
-        <View className="flex-row justify-around items-center absolute bottom-0 bg-white shadow-2xl shadow-black rounded-2xl p-4" style={{
-            paddingBottom: insets.bottom > 0 ? insets.bottom : 16
-        }}>
-            <TouchableOpacity className="items-center justify-center flex-1 gap-1" onPress={() => navigation.navigate("List")}>
-                <FontAwesome5 name="clipboard-list" iconStyle="solid" size={35} color={name === "List" ? '#16a34a' : null}/>
-                <Text className="font-bold text-md" style={{color: name === "List" ? "#16a34a" : null}}>{"List"}</Text>
+        <View style={[
+            { paddingBottom: insets.bottom > 0 ? insets.bottom : 16 },
+            styles.container
+        ]}>
+            <TouchableOpacity style={styles.navigationButton} onPress={() => navigation.navigate("List")}>
+                <FontAwesome5 name="clipboard-list" iconStyle="solid" size={35} color={currentRoute === "List" ? '#16a34a' : null}/>
+                <Text style={[{color: currentRoute === "List" ? "#16a34a" : null}, styles.navigationText]}>{"List"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center justify-center flex-1 gap-1" onPress={() => navigation.navigate("Products")}>
-                <FontAwesome5 name="shopping-basket" iconStyle="solid" size={35} color={name === "Products" ? '#16a34a' : null}/>
-                <Text className="font-bold text-md" style={{color: name === "Products" ? "#16a34a" : null}}>{"Products"}</Text>
+            <TouchableOpacity style={styles.navigationButton} onPress={() => navigation.navigate("Products")}>
+                <FontAwesome5 name="shopping-basket" iconStyle="solid" size={35} color={currentRoute === "Products" ? '#16a34a' : null}/>
+                <Text style={[{color: currentRoute === "Products" ? "#16a34a" : null}, styles.navigationText]}>{"Products"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center justify-center flex-1 gap-1" onPress={() => navigation.navigate("AIChat")}>
-                <FontAwesome5 name="robot" iconStyle="solid" size={35} color={name === "AIChat" ? '#16a34a' : null}/>
-                <Text className="font-bold text-md" style={{color: name === "AIChat" ? "#16a34a" : null}}>{"AI Chat"}</Text>
+            <TouchableOpacity style={styles.navigationButton} onPress={() => navigation.navigate("AIChat")}>
+                <FontAwesome5 name="robot" iconStyle="solid" size={35} color={currentRoute === "AIChat" ? '#16a34a' : null}/>
+                <Text style={[{color: currentRoute === "AIChat" ? "#16a34a" : null}, styles.navigationText]}>{"AI Chat"}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity className="items-center justify-center flex-1 gap-1" onPress={() => navigation.navigate("Profile")}>
-                <FontAwesome5 name="user-circle" iconStyle="solid" size={35} color={name === "Profile" ? '#16a34a' : null}/>
-                <Text className="font-bold text-md" style={{color: name === "Profile" ? "#16a34a" : null}}>{"Profile"}</Text>
+            <TouchableOpacity style={styles.navigationButton} onPress={() => navigation.navigate("Profile")}>
+                <FontAwesome5 name="user-circle" iconStyle="solid" size={35} color={currentRoute === "Profile" ? '#16a34a' : null}/>
+                <Text style={[{color: currentRoute === "Profile" ? "#16a34a" : null}, styles.navigationText]}>{"Profile"}</Text>
             </TouchableOpacity>
         </View>
     )
 }
 
 export default NavigationBar;
+
+const styles = StyleSheet.create({
+    container: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        position: 'absolute',
+        bottom: 0,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 16,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 25
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 25,
+        elevation: 24
+    },
+
+    navigationButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+        gap: 4
+    },
+
+    navigationText: {
+        fontWeight: 700,
+    }
+});

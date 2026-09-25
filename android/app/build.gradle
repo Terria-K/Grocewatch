@@ -118,6 +118,6 @@ dependencies {
     }
 }
 
-project.ext.react = [
-    enableHermes: true
-]
+//project.ext.react = [
+ //   enableHermes: true
+//]

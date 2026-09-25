@@ -9,6 +9,7 @@ type BottomSheetType = {
     children?: React.ReactNode,
     backdropColor: string,
     backgroundColor: string,
+    closeHeight: number,
     ref: React.Ref<BottomSheetHandle>
 }
 
@@ -17,7 +18,7 @@ export type BottomSheetHandle = {
     closeSheet: () => void
 }
 
-function BottomSheet({ activeHeight, children, backdropColor, backgroundColor, ref }: BottomSheetType) {
+function BottomSheet({ activeHeight, children, backdropColor, backgroundColor, closeHeight, ref }: BottomSheetType) {
     const safeAreaInsets = useSafeAreaInsets();
     const { height: screenHeight } = Dimensions.get('screen');
     const closedPositionY = screenHeight;
@@ -74,7 +75,7 @@ function BottomSheet({ activeHeight, children, backdropColor, backgroundColor, r
             sheetPositionY.value = Math.min(Math.max(newPositionY, openPositionY), closedPositionY)
         },
         onFinalize: () => {
-            if (sheetPositionY.value > openPositionY + 50) {
+            if (sheetPositionY.value > openPositionY + closeHeight) {
                 sheetPositionY.value = withSpring(closedPositionY, {
                     damping: 50,
                     stiffness: 150,
@@ -106,6 +107,7 @@ function BottomSheet({ activeHeight, children, backdropColor, backgroundColor, r
                     styles.container,
                     sheetStyle,
                     {
+                        zIndex: 10,
                         height: activeHeight,
                         backgroundColor,
                         paddingBottom: safeAreaInsets.bottom
