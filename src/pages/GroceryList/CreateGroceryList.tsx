@@ -12,8 +12,8 @@ type CreateGroceryListProp = {
 
 function CreateGroceryList({ bs }: CreateGroceryListProp) {
     const [name, setName] = useState('');
-    const [budgetLimit, setBudgetLimit] = useState('0');
-    const [calorieLimit, setCalorieLimit] = useState('0');
+    const [budgetLimit, setBudgetLimit] = useState('');
+    const [calorieLimit, setCalorieLimit] = useState('');
     const groceryList = useGroceryList();
 
     const cancel = () => {
@@ -51,8 +51,8 @@ function CreateGroceryList({ bs }: CreateGroceryListProp) {
 
 
         setName('')
-        setBudgetLimit('0')
-        setCalorieLimit('0')
+        setBudgetLimit('')
+        setCalorieLimit('')
 
         bs.current?.closeSheet();
     }

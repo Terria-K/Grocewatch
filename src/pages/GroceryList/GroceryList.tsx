@@ -124,7 +124,8 @@ function GroceryList() {
 
             <ScrollView contentContainerClassName="gap-4 pb-40" className="rounded-xl flex-1" showsVerticalScrollIndicator={false}>
                 {groceryList.groceryList.map((x, i) => (
-                    <Grocery key={i} name={x.name} count={0} budget={x.budgetLimit} spent={new Decimal(0)} remove={removeGroceryList}/>
+                    <Grocery key={i} name={x.name} count={x.products?.length ?? 0} budget={x.budgetLimit} spent={new Decimal(0)} 
+                    remove={() => removeGroceryList(x.grocerylistID)}/>
                 ))}
 
             </ScrollView>

@@ -2,6 +2,9 @@ import MaterialDesignIcons from "@react-native-vector-icons/material-design-icon
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import SearchBar from "../components/SearchBar";
 import NavigationBar from "../components/NavigationBar";
+import Decimal from "decimal.js";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 
 type CategoryButtonProps = {
     name: string,
@@ -34,15 +37,84 @@ const categoryStyles = StyleSheet.create({
     }
 })
 
-function Product() {
-    return (
-        <>
+type ProductProps = {
+    name: string,
+    price: Decimal,
+    unit: string,
+    category: string
+}
 
-        </>
+function Product({ name, price, category, unit }: ProductProps) {
+    return (
+        <View className="rounded-lg border-gray-600 border p-4 flex-row items-center w-full">
+            <View className="flex-1 justify-center">
+                <Text className="font-bold text-lg">{name}</Text>
+                <Text className="text-green-600 text-sm">{category}</Text>
+
+                <Text className="mt-2">₱{price.toFixed(2)} / {unit}</Text>
+
+            </View>
+
+            <View className="w-[2px] h-full bg-gray-200 mx-3 rounded-xl"/>
+
+            <View className="items-end justify-center gap-2">
+                <View>
+                    <Text className="text-gray-500 text-xs">Calories</Text>
+                    <Text className="text-green-600 text-sm">89 kcal</Text>
+                </View>
+
+                <View>
+                    <Text className="text-gray-500 text-xs">Stock</Text>
+                    <Text className="text-green-600 text-sm">24 kg</Text>
+                </View>
+            </View>
+
+        </View>
     )
 }
 
 function ProductList() {
+    const insets = useSafeAreaInsets();
+
+    const bottomPadding = 80 + (insets.bottom > 0 ? insets.bottom : 20) + 20;
+
+    const getProducts = () => {
+        return [
+        {
+            name: "Apple",
+            price: new Decimal(50),
+            category: "Fruits",
+            unit: "pc"
+        },
+        {
+            name: "Avocado",
+            price: new Decimal(100),
+            category: "Fruits",
+            unit: "pc"
+        },
+        {
+            name: "Avocado",
+            price: new Decimal(100),
+            category: "Fruits",
+            unit: "pc"
+        },
+        {
+            name: "Avocado",
+            price: new Decimal(100),
+            category: "Fruits",
+            unit: "pc"
+        },
+        {
+            name: "Avocado",
+            price: new Decimal(100),
+            category: "Fruits",
+            unit: "pc"
+        },
+        ]
+    }
+
+    const products = getProducts()
+
     return (
         <>
         <View className="px-4 pt-10 gap-6 flex-1">
@@ -67,12 +139,18 @@ function ProductList() {
                 <CategoryButton name="Grains" selected={false}/>
             </ScrollView>
 
-            <View>
-                <Text className="font-bold text-xl">All Products</Text>
-                <Text className="color-gray-400">0 Products</Text>
-            </View>
+            <View className="flex-1 gap-4" style={{paddingBottom: bottomPadding}}>
+                <View>
+                    <Text className="font-bold text-xl">All Products</Text>
+                    <Text className="color-gray-400">{products.length} Products</Text>
+                </View>
 
-            {/* TODO: add the products */}
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName=" gap-4">
+                {products.map((x, i) => {
+                    return <Product key={i} name={x.name} category={x.category} price={x.price} unit={x.unit}/>
+                })}
+                </ScrollView>
+            </View>
 
         </View>
 
