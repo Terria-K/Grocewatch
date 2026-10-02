@@ -4,34 +4,39 @@ import { create } from "zustand";
 type ProductState = {
     products: Product[],
     add: (product: Product) => void;
-    remove: (productID: string) => void;
+    remove: (productID: number) => void;
 }
 
 export type Product = {
-    productID: string,
+    productID: number,
     name: string,
     price: Decimal,
-    calories: number
+    calories: number,
+    category: string,
+    unit: string
 }
 
 
-export const useProducts = create<ProductState>((set) => ({
-    products: [
-        { "productID": "adaj", "name": "Avocado", "price": new Decimal(45), "calories": 200, "category": "Fruits"},
-        {"productID": "k141", "name": "Apple", "price": new Decimal(35), "calories": 200, "category": "Fruits"},
-        {"productID": "214", "name": "Banana", "price": new Decimal(95), "calories": 200, "category": "Fruits"},
-        {"productID": "41412", "name": "Rice", "price": new Decimal(10), "calories": 200, "category": "Grains"},
-        {"productID": "ddkjro", "name": "Milkshake", "price": new Decimal(20), "calories": 200, "category": "Dairy"}
-    ],
-    add: (product) => set((state) => {
-        state.products.push(product)
-        return {
-            products: state.products
-        }
-    }),
-    remove: (id) => set((state) => {
-        return {
-            products: state.products.filter(item => item.productID !== id)
-        }
-    })
-}))
+export const useProducts = create<ProductState>((set) => {
+    return {
+        products: [
+            { "productID": 0, "name": "Avocado", "price": new Decimal(300), "calories": 160, "category": "Fruits", "unit": "pc"},
+            {"productID": 1, "name": "Sugar", "price": new Decimal(74.56), "calories": 95, "category": "Sugar", "unit": "pc"},
+            {"productID": 2, "name": "Banana", "price": new Decimal(95), "calories": 89, "category": "Fruits", "unit": "pc"},
+            {"productID": 3, "name": "Regular Milledb", "price": new Decimal(45.25), "calories": 111, "category": "Grains", "unit": "kg"},
+            {"productID": 4, "name": "Carrot", "price": new Decimal(100), "calories": 41, "category": "Vegetables", "unit": "pc"}
+        ],
+        add: (product) => set((state) => {
+            state.products.push(product)
+            return {
+                products: state.products
+            }
+        }),
+        remove: (id) => set((state) => {
+            return {
+                products: state.products.filter(item => item.productID !== id)
+            }
+        })
+    }
+}) 
+

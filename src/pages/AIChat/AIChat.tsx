@@ -1,4 +1,4 @@
-import { Animated, Button, Keyboard, ScrollView, ScrollViewInstance, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Animated, Keyboard, ScrollView, ScrollViewInstance, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Lucide from "@react-native-vector-icons/lucide";
 import FontAwesome5 from "@react-native-vector-icons/fontawesome5";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -11,7 +11,7 @@ import TemplateBox from "./TemplateBox";
 import { useAI } from "../../context/ai";
 import { OnCartProduct, useGroceryList } from "../../context/grocerylist";
 import { useProducts } from "../../context/products";
-import Decimal from "decimal.js";
+import { ulid } from "react-native-ulid-jsi";
 
 
 function Separator() {
@@ -29,14 +29,14 @@ const sepStyles = StyleSheet.create({
 });
 
 type ProductSuggestionProps = {
-    name: string,
+    id: number,
     quantity: number
 }
 
-function ProductSuggestion({ name, quantity }: ProductSuggestionProps) {
+function ProductSuggestion({ id , quantity }: ProductSuggestionProps) {
     const { products } = useProducts()
 
-    const product = products.filter(x => x.productID === name).at(0)
+    const product = products.filter(x => x.productID === +id).at(0)
 
     return (
         <View >
@@ -57,11 +57,16 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
 
     let rProduct: OnCartProduct[] | undefined = undefined
     if (products) {
-        console.log("JSON: " + products)
         try {
             rProduct = JSON.parse(products.replaceAll("'", "\"")) as OnCartProduct[]
 
-            console.log(rProduct)
+            // fix productID
+            rProduct = rProduct?.map(x => {
+                return {
+                    ...x,
+                    productID: +x.productID
+                }
+            })
         }
         catch (error){
             console.log(error)
@@ -70,17 +75,21 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
 
     const groceryList = useGroceryList();
 
-    const save = () => {
+    const save = async () => {
+        const lid = ulid();
+        
         groceryList.add({
-            grocerylistID: "blah",
+            grocerylistID: lid,
             name: name,
-            budgetLimit: new Decimal(0),
+            budgetLimit: 0,
             calorieLimit: 0,
             createdAt: new Date(),
             modifiedAt: new Date(),
             products: rProduct ?? [],
             defaultInviteRole: 'Viewer'
         })
+
+        await groceryList.saveGroceryList();
 
         setSaved(true)
     }
@@ -94,7 +103,7 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
                 rProduct && rProduct instanceof Array ? (
                     rProduct.map((x, i) => 
                         (<Fragment key={i}>
-                             <ProductSuggestion name={x.productID} quantity={x.quantity}/>
+                             <ProductSuggestion id={x.productID} quantity={x.quantity}/>
                              <Separator/>
                          </Fragment>)
                     )
@@ -131,14 +140,12 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
 
 const components: ReactComponentRegistry = {
     CreateGroceryList: ({ props }) => {
-        console.log(props)
         try {
             const { name, products } = props as unknown as ChatCreateGroceryListProps;
             if (!name || name === '') {
                 return <Text style={{ color: '#ff0000' }}>Cannot do an action</Text>
             }
 
-            console.log(props)
             return (
                 <ChatCreateGroceryList name={name} products={products}/>
 
@@ -205,8 +212,6 @@ function ChatScreen() {
             setToken(prevText => prevText + t)
         });
         const m = finalMessage.messages[finalMessage.messages.length - 1]
-
-        console.log(m.content);
 
         messages.push({ message: m.content?.slice(12).toString()!, role: 'assistant'})
         

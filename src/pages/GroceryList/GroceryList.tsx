@@ -1,48 +1,54 @@
 import Lucide from "@react-native-vector-icons/lucide";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import Decimal from "decimal.js";
-import { Button, Dimensions, ScrollView, Text, TouchableNativeFeedback, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Button, Dimensions, ScrollView, Text, TouchableNativeFeedback, TouchableOpacity, View } from "react-native";
 import SearchBar from "../../components/SearchBar";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import BottomSheet, { BottomSheetHandle } from "../../components/BottomSheet";
-import NavigationBar from "../../components/NavigationBar";
+import NavigationBar, { RootStackParamList } from "../../components/NavigationBar";
 import CreateGroceryList from "./CreateGroceryList";
-import { useGroceryList } from "../../context/grocerylist";
+import { fetchGroceryList, useGroceryList } from "../../context/grocerylist";
 import Popover from "react-native-popover-view";
 import { Placement } from "react-native-popover-view/dist/Types";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
 
 const { height: screenHeight} = Dimensions.get('screen');
 
-function Grocery(props: {
+type GroceryProps = {
+    id: string,
     name: string,
     count: number,
     budget: Decimal,
     spent: Decimal,
+    onPress: () => void,
     remove: (id: string) => void
-}) {
-    const percentage = (1-((props.budget.sub(props.spent)).div(props.budget).toNumber())) * 100;
+}
 
+function Grocery({ id, name, count, budget, spent, onPress, remove }: GroceryProps) {
+    const percentage = (1-((budget.sub(spent)).div(budget).toNumber())) * 100;
+    const popoverRef = useRef<Popover>(null);
 
     return (
-        <TouchableNativeFeedback>
+        <TouchableNativeFeedback onPress={onPress}>
             <View className="bg-gray-100 rounded-xl border-2 border-gray-400 p-4 px-6 shadow-sm shadow-black elevation-xl flex-row justify-between">
                 <View className="flex-1 gap-4">
                     <View>
-                        <Text className="font-bold text-xl">{props.name}</Text>
-                        <Text className="color-gray-400">{props.count} items</Text>
+                        <Text className="font-bold text-xl">{name}</Text>
+                        <Text className="color-gray-400">{count} items</Text>
                     </View>
 
-                    <View className="gap-1" style={{opacity: props.budget.equals(new Decimal(0)) ? 0 : 1}}>
+                    <View className="gap-1" style={{opacity: budget.equals(new Decimal(0)) ? 0 : 1}}>
 
                         <View className="flex-row justify-between max-w-96">
                             <View className="flex-row gap-3">
                                 <Text className="color-gray-400">Budget:</Text> 
-                                <Text className="font-semibold color-green-600">₱{props.budget.toFixed(2)}</Text>
+                                <Text className="font-semibold color-green-600">₱{budget.toFixed(2)}</Text>
                             </View>
 
                             <View className="flex-row gap-3">
                                 <Text className="color-gray-400">Spent:</Text> 
-                                <Text className="color-red-600 font-semibold">₱{props.spent.toFixed(2)}</Text>
+                                <Text className="color-red-600 font-semibold">₱{spent.toFixed(2)}</Text>
                             </View>
                         </View>
                         <View className="h-2 bg-gray-300 w-full rounded" >
@@ -59,6 +65,7 @@ function Grocery(props: {
                         offset={-50}
                         backgroundStyle={{backgroundColor: 'transparent'}}
                         arrowSize={{ width: 0, height: 0}}
+                        ref={popoverRef}
                         from={(
                             <TouchableOpacity className="h-[30px] w-[30px] items-end">
                                 <Lucide name="ellipsis-vertical" size={16}/>
@@ -66,13 +73,16 @@ function Grocery(props: {
                         )}>
                         <View style={{padding: 16}}>
                             <Button title="Edit Grocery List"/>
-                            <Button title="Delete Grocery List" onPress={() => props.remove(props.name)}/>
+                            <Button title="Delete Grocery List" onPress={() => {
+                                remove(id);
+                                popoverRef.current?.requestClose();
+                            }}/>
                         </View>
 
                     </Popover>
 
                     <Text className="top-4 text-sm font-bold" style={{
-                        opacity: props.budget.equals(new Decimal(0)) ? 0 : 1
+                        opacity: budget.equals(new Decimal(0)) ? 0 : 1
                     }}>{!Number.isNaN(percentage) ? percentage.toFixed(0) : 0}%</Text>
                 </View>
             </View>
@@ -80,15 +90,53 @@ function Grocery(props: {
     );
 }
 
+function GroceryListView() {
+    const state = useGroceryList();
+
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const [loading, setLoading] = useState(true);
+
+    const removeGroceryList = async (id: string) => {
+        state.remove(id)
+        await state.saveGroceryList();
+    }
+
+    useEffect(() => {
+        fetchGroceryList().then((data) => {
+            state.set(data);
+            setLoading(false)
+        })
+    }, [])
+
+    if (loading) {
+        return (
+            <View className="flex-1 justify-center items-center">
+                <ActivityIndicator size="large"/>
+            </View>
+        )
+    }
+
+    return (
+        <ScrollView contentContainerClassName="gap-4 pb-40" className="rounded-xl flex-1" showsVerticalScrollIndicator={false}>
+            {state.groceryList.map((x, i) => (
+                <Grocery 
+                    key={i} 
+                    id={x.grocerylistID} 
+                    name={x.name} 
+                    count={x.products?.length ?? 0} 
+                    budget={new Decimal(x.budgetLimit)} 
+                    spent={new Decimal(0)} 
+                    remove={() => removeGroceryList(x.grocerylistID)} 
+                    onPress={() => navigation.navigate("ManageGroceryList", { groceryListID: x.grocerylistID })}/>
+            ))}
+
+        </ScrollView>
+    )
+}
+
 
 function GroceryList() {
     const bottomSheetRef = useRef<BottomSheetHandle>(null);
-
-    const groceryList = useGroceryList();
-
-    const removeGroceryList = (id: string) => {
-        groceryList.remove(id)
-    }
 
     return (
         <>
@@ -122,13 +170,8 @@ function GroceryList() {
                 </View>
             </View>
 
-            <ScrollView contentContainerClassName="gap-4 pb-40" className="rounded-xl flex-1" showsVerticalScrollIndicator={false}>
-                {groceryList.groceryList.map((x, i) => (
-                    <Grocery key={i} name={x.name} count={x.products?.length ?? 0} budget={x.budgetLimit} spent={new Decimal(0)} 
-                    remove={() => removeGroceryList(x.grocerylistID)}/>
-                ))}
+            <GroceryListView />
 
-            </ScrollView>
         </View>
 
         <BottomSheet

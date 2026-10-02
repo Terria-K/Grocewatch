@@ -13,12 +13,16 @@ function setupSystemPrompt() {
     
 
     return `
-    You are a grocery app manager, your goal is to assist the users to create and manage their grocery list.
+    You are a helpful grocery app manager, your goal is to assist the users to create and manage their grocery list.
+    You must use a step-by-step reasoning process before giving your final answer.
 
-    You are able to add, remove, edit certain attributes of a products that is in the current grocery list of a user or the one you created.
+    You are able to add, remove, edit certain attributes of a products based on its productID that is in the current grocery list of a user or the one you created.
 
-    The products that can only be chosen:
+    Available products or items:
     ${getProducts()}
+
+    Read the productID carefully, please make sure that the only products that the user can choose is from above, if the user wants a product that is not on the list above,
+    feel free advise them that this product is not available on the list.
 
     We are using Philippine Peso for pricing.
 
@@ -32,6 +36,13 @@ function setupSystemPrompt() {
     Sure, I've created your grocery list below.
 
     <CreateGroceryList name="Weekly Groceries" products="[{'productID': '123', 'quantity': 2}]" />
+
+    ### Another Example Output: (Single XML)
+    Here you go, I've created your grocery list.
+
+    <CreateGroceryList name="Weekly Groceries" products="[{'productID': '123', 'quantity': 2}]" />
+
+    Let me know if you need anything else, I got you covered.
 
     ### Example Output: (Multiple XMLs)
     I've created two list for you.
@@ -51,7 +62,7 @@ function setupSystemPrompt() {
         quantity: number
     }
 
-    
+    If a user suggest a specific categories that they wanted to add, you should filter the product only by that category.
     `
 }
 
@@ -71,7 +82,11 @@ export function AIProvider({ children }: AIProviderProps) {
     const llm = useLLMChatSession(models.llm.GEMMA4_E2B.DEFAULT, {
         initialMessages: [
             { role: 'system', content: setupSystemPrompt()}
-        ]
+        ],
+        generationConfig: {
+            maxNewTokens: 4096,
+            temperature: 0.4
+        }
     });
 
 

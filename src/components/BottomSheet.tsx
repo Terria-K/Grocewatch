@@ -93,7 +93,7 @@ function BottomSheet({ activeHeight, children, backdropColor, backgroundColor, c
 
     return (
         <>
-        <TouchableWithoutFeedback>
+        <TouchableWithoutFeedback onPress={closeSheet}>
             <Animated.View style={[
                 styles.backdrop,
                 backdropStyle,

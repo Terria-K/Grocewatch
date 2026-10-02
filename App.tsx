@@ -1,11 +1,10 @@
 import "./src/global.css";
 
-import { StatusBar, useColorScheme } from 'react-native';
+import { Appearance, StatusBar, useColorScheme } from 'react-native';
 import {
   SafeAreaProvider,
 } from 'react-native-safe-area-context';
 import GroceryList from "./src/pages/GroceryList/GroceryList";
-import ProductList from "./src/pages/Products";
 import AIChat from "./src/pages/AIChat/AIChat";
 
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -14,12 +13,17 @@ import { createNavigationContainerRef } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { MessageProvider } from "./src/context/messages";
 import { AIProvider } from "./src/context/ai";
+import Profiles from "./src/pages/Profiles/Profiles";
+import ManageGroceryList from "./src/pages/GroceryList/ManageGroceryList";
+import ProductPage, { ProductPopup } from "./src/pages/Products";
+import type { RootStackParamList } from "./src/components/NavigationBar";
 
 
-const Stack = createNativeStackNavigator()
+const Stack = createNativeStackNavigator<RootStackParamList>()
 
 
 function App() {
+    Appearance.setColorScheme("light");
     const isDarkMode = useColorScheme() === 'dark';
     const navigationRef = createNavigationContainerRef();
 
@@ -34,8 +38,15 @@ function App() {
 
                     <Stack.Navigator screenOptions={{headerShown: false}} initialRouteName="List">
                         <Stack.Screen name="List" component={GroceryList}/>
-                        <Stack.Screen name="Products" component={ProductList}/>
+                        <Stack.Screen name="Products" component={ProductPage}/>
                         <Stack.Screen name="AIChat" component={AIChat}/>
+                        <Stack.Screen name="Profile" component={Profiles}/>
+                        <Stack.Screen name="ManageGroceryList" component={ManageGroceryList} options={{
+                            animation: 'slide_from_bottom'
+                        }}/>
+                        <Stack.Screen name="AddProduct" component={ProductPopup} options={{
+                            animation: 'slide_from_bottom'
+                        }}/>
                     </Stack.Navigator>
 
                 </MessageProvider>

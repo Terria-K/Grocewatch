@@ -9,6 +9,12 @@ export type RootStackParamList = {
   Products: undefined;
   Profile: undefined;
   AIChat: undefined;
+  ManageGroceryList: {
+      groceryListID: string
+  } | undefined,
+  AddProduct: {
+      groceryListID: string
+  } | undefined
 };
 
 type NavigationProp = {

@@ -3,8 +3,8 @@ import MaterialDesignIcons from "@react-native-vector-icons/material-design-icon
 import { Text, TextInput, ToastAndroid, TouchableOpacity, View } from "react-native";
 import { useGroceryList } from "../../context/grocerylist";
 import { useState } from "react";
-import Decimal from "decimal.js";
 import { BottomSheetHandle } from "../../components/BottomSheet";
+import { ulid } from "react-native-ulid-jsi";
 
 type CreateGroceryListProp = {
     bs: React.RefObject<BottomSheetHandle | null>
@@ -38,10 +38,12 @@ function CreateGroceryList({ bs }: CreateGroceryListProp) {
             setCalorieLimit('0')
         }
 
+        const lid = ulid();
+
         groceryList.add({
-            grocerylistID: "blah",
+            grocerylistID: lid,
             name: name,
-            budgetLimit: new Decimal(+budgetLimit),
+            budgetLimit: +budgetLimit,
             calorieLimit: +calorieLimit,
             createdAt: new Date(),
             modifiedAt: new Date(),
@@ -55,6 +57,7 @@ function CreateGroceryList({ bs }: CreateGroceryListProp) {
         setCalorieLimit('')
 
         bs.current?.closeSheet();
+        groceryList.saveGroceryList();
     }
 
     const numericTextChangeBudgetLimit = (text: string) => {
