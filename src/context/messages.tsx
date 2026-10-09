@@ -1,9 +1,8 @@
 import { createContext, useContext, useState } from "react";
-import { MessageRole } from "react-native-gemma-agent";
 
 export type ChatMessageType = {
     message: string,
-    role: MessageRole
+    role: "system" | "tool" | "user" | "assistant"
 }
 
 const MessageContext = createContext({

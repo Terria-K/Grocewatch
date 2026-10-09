@@ -8,6 +8,7 @@ export type GroceryListState = {
     set: (list: GroceryList[]) => void;
     add: (list: GroceryList) => void;
     addProduct: (groceryListID: string, productID: number, quantity: number) => void;
+    setProductQuantity: (groceryListID: string, productID: number, quantity: number) => void;
     remove: (groceryListID: string) => void;
     saveGroceryList: () => Promise<void>;
 }
@@ -40,8 +41,6 @@ export const useGroceryList = create<GroceryListState>((set, get) => {
         addProduct: (grocerylistID, productID, quantity) => set((state) => ({
                 groceryList: state.groceryList.map((item) => {
                     if (item.products.some(x => x.productID === productID)) {
-                        // implementation?
-
                         return item.grocerylistID === grocerylistID 
                             ? {...item, products: item.products.map(
                                 product => product.productID === productID
@@ -56,6 +55,20 @@ export const useGroceryList = create<GroceryListState>((set, get) => {
                 })
             })
         ),
+        setProductQuantity: (grocerylistID, productID, quantity) => set((state) => ({
+            groceryList: state.groceryList.map((item) => {
+                if (item.products.some(x => x.productID === productID)) {
+                    return item.grocerylistID === grocerylistID 
+                        ? {...item, products: item.products.map(
+                            product => product.productID === productID
+                                ? { ...product, quantity: quantity }
+                                : product)}
+                        : item
+                }
+
+                return item;
+            })
+        })),
         remove: (id) => set((state) => {
             return {
                 groceryList: state.groceryList.filter(item => item.grocerylistID !== id)
