@@ -13,7 +13,6 @@ import { OnCartProduct, useGroceryList } from "../../context/grocerylist";
 import { useProducts } from "../../context/products";
 import { ulid } from "react-native-ulid-jsi";
 import HorizontalSeparator from "../../components/HorizontalSeparator";
-import { RnExecuTorchError } from "react-native-executorch";
 
 
 type ProductSuggestionProps = {
@@ -52,7 +51,8 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
             rProduct = rProduct?.map(x => {
                 return {
                     ...x,
-                    productID: +x.productID
+                    productID: +x.productID,
+                    onCartID: ulid()
                 }
             })
         }
@@ -144,15 +144,14 @@ const components: ReactComponentRegistry = {
 }
 
 function ChatScreen() {
-    const { llm } = useAI();
+    const { downloadLLM, launchChat, chat } = useAI();
 
 
     const { messages, reload } = useMessage();
 
     const [message, setMessage] = useState('');
-    const [isDownloaded, setDownloaded] = useState(llm.isReady)
     const [loading, setLoading] = useState(false)
-    const [percent, setPercent] = useState(0)
+    const [aiLoading, setAILoading] = useState(false)
     const [token, setToken] = useState('')
 
     const scrollViewRef = useRef<ScrollViewInstance>(null);
@@ -160,13 +159,17 @@ function ChatScreen() {
 
     const handleSubmit = async () => {
         if (loading) {
-            llm.stop!()
+            chat?.stopGeneration();
+            setLoading(false);
             return;
         }
+        await downloadLLM();
+        
+
 
         const mess = message.trim();
 
-        if (mess === "" || !llm.isReady || !llm.sendMessage)
+        if (mess === "")
         {
             return;
         }
@@ -179,37 +182,37 @@ function ChatScreen() {
         Keyboard.dismiss();
 
         scrollViewRef.current?.scrollToEnd({ animated: true })
-        //if (!llm.isReady)
-        //{
-        //    await llm.loadModel(GEMMA_4_E4B_IT, {backend: "gpu"}, (percent) => {
-        //        setPercent(percent);
-        //    })
-        //}
-        //
+
         setToken('')
 
+        let leChat = chat;
+
+        if (!leChat) {
+            setAILoading(true);
+            console.log("LOADING AGAIN?");
+            leChat = await launchChat();
+            if (!leChat) {
+                return;
+            }
+
+            setAILoading(false);
+        }
+
+        console.log(leChat);
+
         try {
-            const finalMessage = await llm.sendMessage!(mess, (t) => {
-                if (t.match('<|turn>model'))
-                {
-                    return;
-                }
+            const responses = leChat!.ask(mess);
 
-                setToken(prevText => prevText + t)
-            });
-            const m = finalMessage.messages[finalMessage.messages.length - 1]
+            for await (const token of responses) {
+                setToken(prevText => prevText + token)
+            }
 
-            messages.push({ message: m.content?.slice(12).toString()!, role: 'assistant'})
+            const finalMessage = await responses.completed();
+
+            messages.push({ message: finalMessage.toString()!, role: 'assistant'})
         }
         catch (err) {
             console.log(err)
-            if (err instanceof RnExecuTorchError) {
-                if ((err as RnExecuTorchError).code === 'INVALID_ARGUMENT') {
-                    console.error("Argument Error: ", (err as RnExecuTorchError).message);
-                    console.log("Native runtime error code: ", (err as RnExecuTorchError).etRuntimeErrorCode);
-                }
-            }
-
         }
 
         
@@ -251,10 +254,10 @@ function ChatScreen() {
             }
 
             {
-               !llm.isReady 
+                aiLoading
                     ? 
                     <View className="items-center">
-                        <Text className="font-bold text-xl">Loading Model {llm.downloadProgress}%</Text>
+                        <Text className="font-bold text-xl">Loading Model</Text>
                     </View> 
                     : null
             }

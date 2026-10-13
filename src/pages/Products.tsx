@@ -176,14 +176,20 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
             "selected": false
         },
         {
-            "name": "Dairy",
+            "name": "Fruits",
             "selected": false
         },
         {
             "name": "Grains",
             "selected": false
         },
+        {
+            "name": "Sugar",
+            "selected": false
+        },
     ]);
+
+    const [selectedCategory, setSelectedCategory] = useState("All");
 
     const bottomPadding = 80 + (insets.bottom > 0 ? insets.bottom : 20) + 20;
 
@@ -210,6 +216,7 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
                             return category.map(y => {
                                 if (y.name === x.name) {
                                     y.selected = true;
+                                    setSelectedCategory(y.name);
                                     return y;
                                 }
 
@@ -228,7 +235,13 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
                 </View>
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="gap-4">
-                {products.map((x, i) => {
+                {products.filter(x => {
+                    if (selectedCategory === "All") {
+                        return true;
+                    }
+
+                    return x.category === selectedCategory;
+                }).map((x, i) => {
                     return <Product 
                         onPress={() => productPressed(x.productID)}
                         key={i} name={x.name} category={x.category} price={x.price} unit={x.unit} calories={x.calories}/>

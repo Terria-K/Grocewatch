@@ -24,7 +24,8 @@ export const useProducts = create<ProductState>((set) => {
             {"productID": 1, "name": "Sugar", "price": new Decimal(74.56), "calories": 95, "category": "Sugar", "unit": "pc"},
             {"productID": 2, "name": "Banana", "price": new Decimal(95), "calories": 89, "category": "Fruits", "unit": "pc"},
             {"productID": 3, "name": "Regular Milledb", "price": new Decimal(45.25), "calories": 111, "category": "Grains", "unit": "kg"},
-            {"productID": 4, "name": "Carrot", "price": new Decimal(100), "calories": 41, "category": "Vegetables", "unit": "pc"}
+            {"productID": 4, "name": "Carrot", "price": new Decimal(100), "calories": 41, "category": "Vegetables", "unit": "pc"},
+            {"productID": 5, "name": "Ampalaya", "price": new Decimal(140), "calories": 34, "category": "Vegetables", "unit": "kg"},
         ],
         add: (product) => set((state) => {
             state.products.push(product)
