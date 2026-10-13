@@ -10,7 +10,6 @@ import MaterialDesignIcons from "@react-native-vector-icons/material-design-icon
 import { useNavigation } from "@react-navigation/native";
 import { useGroceryList } from "../context/grocerylist";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { quadSize } from "react-native-executorch/cv";
 
 
 const { height: screenHeight} = Dimensions.get('screen');
@@ -193,10 +192,6 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
         bottomSheetRef.current?.openSheet();
     }
 
-    const goBack = () => {
-        navigation.goBack();
-    }
-
     return (
         <>
         <View className="px-4 pt-10 gap-6 flex-1">
@@ -250,7 +245,7 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
             closeHeight={150}
             backgroundColor="white"
         >
-            <ProductAddView onBack={goBack} productID={productID} groceryListID={groceryListID}/>
+            <ProductAddView onBack={navigation.goBack} productID={productID} groceryListID={groceryListID}/>
         </BottomSheet> : null}
         </>
     )

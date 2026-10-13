@@ -12,21 +12,9 @@ import { useAI } from "../../context/ai";
 import { OnCartProduct, useGroceryList } from "../../context/grocerylist";
 import { useProducts } from "../../context/products";
 import { ulid } from "react-native-ulid-jsi";
+import HorizontalSeparator from "../../components/HorizontalSeparator";
+import { RnExecuTorchError } from "react-native-executorch";
 
-
-function Separator() {
-    return <View style={sepStyles.separator}/>
-}
-
-
-const sepStyles = StyleSheet.create({
-  separator: {
-    height: 1,                 // Line thickness
-    width: '100%',             // Full width
-    backgroundColor: '#CCCCCC', // Light gray color
-    marginVertical: 10,        // Spacing above and below the line
-  },
-});
 
 type ProductSuggestionProps = {
     id: number,
@@ -104,7 +92,7 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
                     rProduct.map((x, i) => 
                         (<Fragment key={i}>
                              <ProductSuggestion id={x.productID} quantity={x.quantity}/>
-                             <Separator/>
+                             <HorizontalSeparator gap={10}/>
                          </Fragment>)
                     )
                 ) : null 
@@ -129,10 +117,7 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
                 </View>
             }
 
-
             </View>
-
-
         </View>
     )
 }
@@ -203,17 +188,30 @@ function ChatScreen() {
         //
         setToken('')
 
-        const finalMessage = await llm.sendMessage!(mess, (t) => {
-            if (t.match('<|turn>model'))
-            {
-                return;
+        try {
+            const finalMessage = await llm.sendMessage!(mess, (t) => {
+                if (t.match('<|turn>model'))
+                {
+                    return;
+                }
+
+                setToken(prevText => prevText + t)
+            });
+            const m = finalMessage.messages[finalMessage.messages.length - 1]
+
+            messages.push({ message: m.content?.slice(12).toString()!, role: 'assistant'})
+        }
+        catch (err) {
+            console.log(err)
+            if (err instanceof RnExecuTorchError) {
+                if ((err as RnExecuTorchError).code === 'INVALID_ARGUMENT') {
+                    console.error("Argument Error: ", (err as RnExecuTorchError).message);
+                    console.log("Native runtime error code: ", (err as RnExecuTorchError).etRuntimeErrorCode);
+                }
             }
 
-            setToken(prevText => prevText + t)
-        });
-        const m = finalMessage.messages[finalMessage.messages.length - 1]
+        }
 
-        messages.push({ message: m.content?.slice(12).toString()!, role: 'assistant'})
         
         reload();
         setLoading(false);

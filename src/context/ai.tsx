@@ -1,6 +1,78 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext } from "react";
 import { models, useLLMChatSession } from "react-native-executorch";
 import { useProducts } from "./products";
+import { type ToolDefinition, ToolParser, ToolParserResult } from "react-native-executorch/llm";
+
+export const productTool: ToolDefinition = {
+    type: 'function',
+    function: {
+        name: 'get_all_products',
+        description: 'Get all of the available products.',
+        parameters: {
+            type: 'object',
+            properties: {
+                category: { type: 'string', description: 'The category of all products.' },
+            },
+            required: []
+        }
+    },
+    execute: async ({ category }) => {
+        let products = useProducts(x => x.products);
+        if (category) {
+            products = products.filter(x => x.category.match(category as string));
+        }
+
+        return JSON.stringify(products);
+    }
+}
+
+export const xmlToolParser: ToolParser = (text: string): ToolParserResult | undefined => {
+    const match = text.match(/<\|tool_call>call:(\w+)\{(.*?\}?)\}<tool_call\|>/);
+
+    if (!match) {
+        return undefined;
+    }
+
+    const functionName = match[1].trim();
+
+    let rawArgs = match[2].trim();
+
+    try {
+        rawArgs = rawArgs.replace(/<\|"\|>/g, '"');
+
+        let jsonString = `{${rawArgs}}`;
+
+        if (!jsonString.startsWith('{') || !jsonString.endsWith('}')) {
+            jsonString = `{${jsonString}}`;
+        }
+
+        const validJsonArgs = jsonString.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '\$1"\$2":');
+
+        const parsedArguments = JSON.parse(validJsonArgs);
+
+        const cleanedTextContent = text
+            .replace(/<\|tool_call>[\s\(\S\)]*?\<tool_call\|>/g, '') 
+            .trim();
+
+
+        return {
+            toolCalls: [
+                {
+                    function: {
+                        name: functionName,
+                        arguments: parsedArguments 
+                    }
+                }
+            ],
+
+            textContent: cleanedTextContent || "Executing requested tool."
+        }
+    } catch (err) {
+        console.error("Gemma 4 Tool Call Parsing failed: ", err);
+        return undefined;
+    }
+}
+
 
 function setupSystemPrompt() {
     const getProducts = () => {
@@ -19,8 +91,7 @@ function setupSystemPrompt() {
 
     You are able to add, remove, edit certain attributes of a products based on its productID that is in the current grocery list of a user or the one you created.
 
-    Available products or items:
-    ${getProducts()}
+    Use the get_all_products tool to get all the available products. Use the category parameter when asked by the user.
 
     Read the productID carefully, please make sure that the only products that the user can choose is from above, if the user wants a product that is not on the list above,
     feel free advise them that this product is not available on the list.
@@ -84,10 +155,15 @@ export function AIProvider({ children }: AIProviderProps) {
         initialMessages: [
             { role: 'system', content: setupSystemPrompt()}
         ],
+        toolOpts: {
+            tools: [productTool],
+            parseToolCalls: xmlToolParser,
+            maxToolTurns: 5
+        },
         generationConfig: {
-            maxNewTokens: 4096,
-            temperature: 0.4
-        }
+            maxNewTokens: 8192,
+            temperature: 0.4,
+        },
     });
 
 

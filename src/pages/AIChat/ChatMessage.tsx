@@ -1,5 +1,5 @@
 import { Fragment } from "react"
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native"
+import { ActivityIndicator, StyleSheet, View } from "react-native"
 import { useMarkdown, useMarkdownWithComponents } from "react-native-marked"
 
 type MessageRole = 'user' | 'assistant' | 'tool' | 'system';

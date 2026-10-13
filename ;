@@ -1,0 +1,206 @@
+import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
+import {  Dimensions, ScrollView, Text, TextInput, TouchableNativeFeedback, TouchableOpacity, View } from "react-native";
+import type { RootStackParamList } from "../../components/NavigationBar";
+import type { NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
+import SearchBar from "../../components/SearchBar";
+import { useGroceryList, type OnCartProduct } from "../../context/grocerylist";
+import { type Product, useProducts } from "../../context/products";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import BottomSheet, { BottomSheetHandle } from "../../components/BottomSheet";
+import { useCallback, useRef, useState } from "react";
+import Checkbox from "../../components/Checkbox";
+import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
+
+const { height: screenHeight} = Dimensions.get('screen');
+
+
+type ProductCardProps = {
+    products: Product[],
+    product: OnCartProduct,
+    onPress: (onCartProduct: OnCartProduct) => void,
+    onCheck: (onCartProduct: OnCartProduct) => void,
+}
+
+function ProductCard({ products, product, onPress, onCheck }: ProductCardProps) {
+    const prod = products.filter(x => x.productID === product.productID).at(0)
+
+    const onProductCheck = (_: boolean) => {
+        onCheck(product)
+    }
+
+    return (
+        <Animated.View layout={LinearTransition.springify().damping(100).stiffness(0)} entering={FadeIn} exiting={FadeOut}>
+            <TouchableNativeFeedback onPress={() => onPress(product)}>
+                <View className="flex-row w-full bg-gray-100 border-b border-gray-400 p-4 gap-2">
+                    <Checkbox active={product.checked} onToggle={onProductCheck}/>
+                    <View className="w-[40%] justify-center">
+                        <Text className="font-bold">{prod?.name}</Text>
+                        <Text className="text-sm">{prod?.category}</Text>
+                    </View>
+
+                    <View className="flex-1 justify-center items-center w-[60%]">
+                        <Text>{product.quantity} {prod?.unit}</Text>
+                        <Text className="text-green-700 font-bold">₱{prod ? (prod.price.mul(product.quantity)).toFixed(2) : 0}</Text>
+                    </View>
+
+                    <View className="flex-row items-center gap-4">
+                        <MaterialDesignIcons name="pencil-outline" size={20}/>
+                        <MaterialDesignIcons name="trash-can-outline" size={20}/>
+                    </View>
+                </View>
+            </TouchableNativeFeedback>
+        </Animated.View>
+    )
+}
+
+type ProductViewProps = {
+    selectedProduct: OnCartProduct,
+    setQuantity: (text: string) => void
+}
+
+function ProductView({ selectedProduct, setQuantity } : ProductViewProps) {
+
+    return (
+        <View className="items-center">
+            <Text className="font-bold">Quantity</Text> 
+            <View className="justify-center items-center gap-4">
+                <View className="flex-row items-center gap-4">
+                    <TouchableOpacity onPress={() => {
+                        if (selectedProduct.quantity == 0) {
+                            setQuantity('0');
+                            return
+                        }
+
+                        setQuantity((selectedProduct.quantity - 1).toString())
+                    }}>
+                        <MaterialDesignIcons name="minus" size={20} />
+                    </TouchableOpacity>
+
+                    <TextInput 
+                        value={selectedProduct.quantity.toString()}
+                        onChangeText={setQuantity}
+                        keyboardType="numeric"
+                        className="p-4 bg-gray-200 rounded-xl w-14 text-center text-black"
+                        placeholder="0" />
+
+                    <TouchableOpacity onPress={() => setQuantity((selectedProduct.quantity + 1).toString())}>
+                        <MaterialDesignIcons name="plus" size={20} />
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+    )
+}
+
+type ManageGroceryListProps = NativeStackScreenProps<RootStackParamList, 'ManageGroceryList'>;
+
+function ManageGroceryList({ route }: ManageGroceryListProps) {
+    const p = route.params;
+    const groceryListID = p?.groceryListID;
+
+    const groceryList = useGroceryList(x => x.groceryList.filter(x => x.grocerylistID === groceryListID).at(0));
+    const groceryListState = useGroceryList();
+
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const [selectedProduct, setSelectedProduct] = useState<OnCartProduct>();
+
+    const products = useProducts(x => x.products);
+    const insets = useSafeAreaInsets();
+
+    const bottomPadding = 90 + (insets.bottom > 0 ? insets.bottom : 16) + 16;
+
+    const addButton = () => {
+        if (groceryList) {
+            navigation.navigate("AddProduct", { groceryListID: groceryList.grocerylistID })
+        }
+    }
+
+    const onChecked = useCallback(async (product: OnCartProduct) => {
+        groceryListState.toggleCheckProduct(groceryList!.grocerylistID, product.productID);
+
+        await groceryListState.saveGroceryList();
+    }, []);
+
+    const onView = useCallback((product: OnCartProduct) => {
+        bottomSheetRef.current?.openSheet();
+
+        setSelectedProduct(product);
+        setQuantity(product.quantity.toString());
+    }, []);
+
+    const setQuantity = async (num: string) => {
+        if (!selectedProduct) {
+            return;
+        }
+
+        groceryListState.setProductQuantity(groceryList!.grocerylistID, selectedProduct.productID, +num)
+        setSelectedProduct(x => ({
+            ...x!,
+            quantity: +num
+        }))
+
+        await groceryListState.saveGroceryList();
+    }
+
+    const bottomSheetRef = useRef<BottomSheetHandle>(null);
+
+    return (
+    <>
+    <View className="px-4 pt-10 gap-8 flex-1" style={{paddingBottom: bottomPadding}}>
+        <View className="flex-row items-center gap-2">
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+                <MaterialDesignIcons name="keyboard-backspace" size={30}/>
+            </TouchableOpacity>
+            <Text className="font-bold text-2xl">Manage Grocery List</Text>
+        </View>
+
+        <View className="flex-1">
+            <View className="bg-gray-100 border-2 rounded-xl border-gray-400 p-4">
+                <Text className="font-bold text-xl">Products</Text>
+
+                <View className="flex-row items-center gap-2 justify-center">
+                    <SearchBar placeholder="Search Products..."/>
+
+                    <TouchableOpacity 
+                    className="rounded-lg bg-green-700 border-green-700 border-2 border-solid shadow-sm shadow-black elevation-2xl p-2 flex-row items-center"
+                    onPress={addButton}>
+                        <MaterialDesignIcons name="plus" size={20} color="#FFFFFF"/>
+                        <Text className="text-white font-bold">Add</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            <ScrollView className="rounded-xl border h-auto" showsVerticalScrollIndicator={false}>
+            {groceryList!.products
+                .sort((a, b) => b.onCartID.localeCompare(a.onCartID))
+                .sort((a, b) => {
+                if (a.checked && b.checked) {
+                    return 0; 
+                }
+                if (a.checked) {
+                    return 1;
+                }
+
+                return -1;
+            }).map((x) => <ProductCard onPress={onView} products={products} product={x} key={x.productID} onCheck={onChecked}/>)}
+            </ScrollView>
+        </View>
+    </View>
+
+        <BottomSheet
+            ref={bottomSheetRef}
+            activeHeight={screenHeight * 0.55}
+            backdropColor="rgba(0,0,0,0.5)"
+            closeHeight={150}
+            backgroundColor="white"
+        >
+            {selectedProduct ?
+                <ProductView selectedProduct={selectedProduct} setQuantity={setQuantity}/>
+                : null
+            }
+        </BottomSheet>
+    </>)
+}
+
+export default ManageGroceryList;

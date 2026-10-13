@@ -1,4 +1,5 @@
 import RNFS from "react-native-fs";
+import { ulid } from "react-native-ulid-jsi";
 import { create } from "zustand";
 
 type Role = 'Admin' | 'Editor' | 'Viewer';
@@ -7,15 +8,22 @@ export type GroceryListState = {
     groceryList: GroceryList[],
     set: (list: GroceryList[]) => void;
     add: (list: GroceryList) => void;
+
+    setState: (groceryListID: string, budget: number, calorie: number) => void,
+
     addProduct: (groceryListID: string, productID: number, quantity: number) => void;
+    removeProduct: (groceryListID: string, productID: number) => void;
     setProductQuantity: (groceryListID: string, productID: number, quantity: number) => void;
+    toggleCheckProduct: (groceryListID: string, productID: number) => void;
     remove: (groceryListID: string) => void;
     saveGroceryList: () => Promise<void>;
 }
 
 export type OnCartProduct = {
+    onCartID: string,
     productID: number,
-    quantity: number
+    quantity: number,
+    checked: boolean,
 }
 
 export type GroceryList = {
@@ -38,6 +46,15 @@ export const useGroceryList = create<GroceryListState>((set, get) => {
                 groceryList: [...state.groceryList, list]
             }
         }),
+
+        setState: (groceryListID, budget, calorie) => set((state) => ({
+            groceryList: state.groceryList.map((item) => {
+                return item.grocerylistID === groceryListID 
+                    ? {...item, budgetLimit: budget, calorieLimit: calorie }
+                    : item
+            })
+        })),
+
         addProduct: (grocerylistID, productID, quantity) => set((state) => ({
                 groceryList: state.groceryList.map((item) => {
                     if (item.products.some(x => x.productID === productID)) {
@@ -50,11 +67,21 @@ export const useGroceryList = create<GroceryListState>((set, get) => {
                     }
 
                     return item.grocerylistID === grocerylistID 
-                        ? {...item, products: [...item.products, { productID: productID, quantity: quantity }]}
+                        ? {...item, products: [...item.products, { productID: productID, quantity: quantity, checked: false, onCartID: ulid() }]}
                         : item
                 })
             })
         ),
+
+        removeProduct: (grocerylistID, productID) => set((state) => ({
+                groceryList: state.groceryList.map((item) => {
+                    return item.grocerylistID === grocerylistID
+                        ? { ...item, products: item.products.filter(x => x.productID !== productID) }
+                        : item
+                })
+            })
+        ),
+
         setProductQuantity: (grocerylistID, productID, quantity) => set((state) => ({
             groceryList: state.groceryList.map((item) => {
                 if (item.products.some(x => x.productID === productID)) {
@@ -67,6 +94,16 @@ export const useGroceryList = create<GroceryListState>((set, get) => {
                 }
 
                 return item;
+            })
+        })),
+        toggleCheckProduct: (grocerylistID, productID) => set((state) => ({
+            groceryList: state.groceryList.map((item) => {
+                return item.grocerylistID === grocerylistID 
+                    ? {...item, products: item.products.map(
+                        product => product.productID === productID
+                            ? { ...product, checked: !product.checked }
+                            : product)}
+                    : item
             })
         })),
         remove: (id) => set((state) => {

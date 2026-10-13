@@ -1,6 +1,6 @@
 import "./src/global.css";
 
-import { Appearance, StatusBar, useColorScheme } from 'react-native';
+import { Appearance, Platform, StatusBar, UIManager, useColorScheme } from 'react-native';
 import {
   SafeAreaProvider,
 } from 'react-native-safe-area-context';
@@ -17,7 +17,7 @@ import Profiles from "./src/pages/Profiles/Profiles";
 import ManageGroceryList from "./src/pages/GroceryList/ManageGroceryList";
 import ProductPage, { ProductPopup } from "./src/pages/Products";
 import type { RootStackParamList } from "./src/components/NavigationBar";
-
+import CreateGroceryList from "./src/pages/GroceryList/CreateGroceryList";
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
@@ -41,6 +41,9 @@ function App() {
                         <Stack.Screen name="Products" component={ProductPage}/>
                         <Stack.Screen name="AIChat" component={AIChat}/>
                         <Stack.Screen name="Profile" component={Profiles}/>
+                        <Stack.Screen name="CreateGroceryList" component={CreateGroceryList} options={{
+                            animation: 'slide_from_bottom'
+                        }}/>
                         <Stack.Screen name="ManageGroceryList" component={ManageGroceryList} options={{
                             animation: 'slide_from_bottom'
                         }}/>

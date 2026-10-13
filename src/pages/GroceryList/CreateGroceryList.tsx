@@ -3,14 +3,15 @@ import MaterialDesignIcons from "@react-native-vector-icons/material-design-icon
 import { Text, TextInput, ToastAndroid, TouchableOpacity, View } from "react-native";
 import { useGroceryList } from "../../context/grocerylist";
 import { useState } from "react";
-import { BottomSheetHandle } from "../../components/BottomSheet";
 import { ulid } from "react-native-ulid-jsi";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../components/NavigationBar";
 
-type CreateGroceryListProp = {
-    bs: React.RefObject<BottomSheetHandle | null>
-}
 
-function CreateGroceryList({ bs }: CreateGroceryListProp) {
+function CreateGroceryList() {
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
     const [name, setName] = useState('');
     const [budgetLimit, setBudgetLimit] = useState('');
     const [calorieLimit, setCalorieLimit] = useState('');
@@ -21,7 +22,7 @@ function CreateGroceryList({ bs }: CreateGroceryListProp) {
         setBudgetLimit('')
         setCalorieLimit('')
 
-        bs.current?.closeSheet();
+        navigation.goBack();
     }
 
     const create = () => {
@@ -56,8 +57,9 @@ function CreateGroceryList({ bs }: CreateGroceryListProp) {
         setBudgetLimit('')
         setCalorieLimit('')
 
-        bs.current?.closeSheet();
         groceryList.saveGroceryList();
+
+        navigation.goBack();
     }
 
     const numericTextChangeBudgetLimit = (text: string) => {

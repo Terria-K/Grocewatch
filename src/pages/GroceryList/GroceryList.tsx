@@ -1,31 +1,48 @@
 import Lucide from "@react-native-vector-icons/lucide";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import Decimal from "decimal.js";
-import { ActivityIndicator, Button, Dimensions, ScrollView, Text, TouchableNativeFeedback, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Button, ScrollView, Text, TouchableNativeFeedback, TouchableOpacity, View } from "react-native";
 import SearchBar from "../../components/SearchBar";
 import { useEffect, useRef, useState } from "react";
-import BottomSheet, { BottomSheetHandle } from "../../components/BottomSheet";
 import NavigationBar, { RootStackParamList } from "../../components/NavigationBar";
-import CreateGroceryList from "./CreateGroceryList";
-import { fetchGroceryList, useGroceryList } from "../../context/grocerylist";
+import { fetchGroceryList, GroceryListState, OnCartProduct, useGroceryList } from "../../context/grocerylist";
 import Popover from "react-native-popover-view";
 import { Placement } from "react-native-popover-view/dist/Types";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
-
-const { height: screenHeight} = Dimensions.get('screen');
+import { useProducts } from "../../context/products";
+import HorizontalSeparator from "../../components/HorizontalSeparator";
+import Confirmation, { ConfirmationHandle } from "../../components/Confirmation";
 
 type GroceryProps = {
     id: string,
     name: string,
     count: number,
     budget: Decimal,
-    spent: Decimal,
+    products: OnCartProduct[],
     onPress: () => void,
-    remove: (id: string) => void
+    remove: (id: string) => void,
 }
 
-function Grocery({ id, name, count, budget, spent, onPress, remove }: GroceryProps) {
+function Grocery({ id, name, count, budget, products, onPress, remove }: GroceryProps) {
+    const baseProducts = useProducts(x => x.products);
+
+    const pr = products.filter(x => x.checked).map(x => {
+        const product = baseProducts.filter(p => p.productID === x.productID).at(0);
+        if (!product) {
+            return new Decimal(0);
+        }
+
+        return product.price.mul(x.quantity);
+    });
+
+    let spent: Decimal;
+    if (pr.length != 0) {
+        spent = pr.reduce((x, y) => x.add(y));
+    } else {
+        spent = new Decimal(0);
+    }
+
     const percentage = (1-((budget.sub(spent)).div(budget).toNumber())) * 100;
     const popoverRef = useRef<Popover>(null);
 
@@ -52,7 +69,8 @@ function Grocery({ id, name, count, budget, spent, onPress, remove }: GroceryPro
                             </View>
                         </View>
                         <View className="h-2 bg-gray-300 w-full rounded" >
-                            <View className="h-2 bg-green-600 rounded" style={{
+                            <View className="h-2 rounded" style={{
+                                backgroundColor: budget.greaterThan(spent) ? "#16a34a" : "#dc2626",
                                 width: `${percentage}%`,
                             }}/>
                         </View>
@@ -71,12 +89,24 @@ function Grocery({ id, name, count, budget, spent, onPress, remove }: GroceryPro
                                 <Lucide name="ellipsis-vertical" size={16}/>
                             </TouchableOpacity>
                         )}>
-                        <View style={{padding: 16}}>
-                            <Button title="Edit Grocery List"/>
-                            <Button title="Delete Grocery List" onPress={() => {
+                        <View style={{padding: 8}}>
+                            <TouchableNativeFeedback onPress={() => {
+                                onPress();
+                                popoverRef.current?.requestClose();
+                            }}>
+                                <View className="p-2">
+                                    <Text className="font-bold">Manage Grocery List</Text>
+                                </View>
+                            </TouchableNativeFeedback>
+                            <HorizontalSeparator gap={2}/>
+                            <TouchableNativeFeedback onPress={() => {
                                 remove(id);
                                 popoverRef.current?.requestClose();
-                            }}/>
+                            }}>
+                                <View className="p-2">
+                                    <Text className="font-bold">Delete Grocery List</Text>
+                                </View>
+                            </TouchableNativeFeedback>
                         </View>
 
                     </Popover>
@@ -90,15 +120,19 @@ function Grocery({ id, name, count, budget, spent, onPress, remove }: GroceryPro
     );
 }
 
-function GroceryListView() {
-    const state = useGroceryList();
+type GroceryListViewProps = {
+    confirmationHandle: React.RefObject<ConfirmationHandle | null>,
+    state: GroceryListState,
+    toRemove: (id: string) => void
+}
 
+function GroceryListView({ state, confirmationHandle, toRemove }: GroceryListViewProps) {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [loading, setLoading] = useState(true);
 
     const removeGroceryList = async (id: string) => {
-        state.remove(id)
-        await state.saveGroceryList();
+        confirmationHandle.current?.openDialog();
+        toRemove(id);
     }
 
     useEffect(() => {
@@ -125,7 +159,7 @@ function GroceryListView() {
                     name={x.name} 
                     count={x.products?.length ?? 0} 
                     budget={new Decimal(x.budgetLimit)} 
-                    spent={new Decimal(0)} 
+                    products={x.products}
                     remove={() => removeGroceryList(x.grocerylistID)} 
                     onPress={() => navigation.navigate("ManageGroceryList", { groceryListID: x.grocerylistID })}/>
             ))}
@@ -136,7 +170,29 @@ function GroceryListView() {
 
 
 function GroceryList() {
-    const bottomSheetRef = useRef<BottomSheetHandle>(null);
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const handleRef = useRef<ConfirmationHandle>(null);
+    const state = useGroceryList();
+
+    const [groceryListToRemove, setGroceryListToRemove] = useState('');
+
+    const toRemove = (groceryListID: string) => {
+        setGroceryListToRemove(groceryListID);
+    }
+
+    const remove = async () => {
+        if (!handleRef.current) {
+            return;
+        }
+
+        if (!handleRef.current.shouldHandleInput()) {
+            return;
+        }
+        state.remove(groceryListToRemove)
+
+        handleRef.current.closeDialog();
+        await state.saveGroceryList();
+    }
 
     return (
         <>
@@ -161,31 +217,36 @@ function GroceryList() {
 
                     <TouchableOpacity className="rounded-lg bg-green-300 border-green-600 border-2 border-solid shadow-sm shadow-black elevation-2xl" 
                         onPress={() => {
-                        if (bottomSheetRef.current) {
-                            bottomSheetRef.current.openSheet();
-                        }
+                            navigation.navigate("CreateGroceryList")
                     }}>
                         <MaterialDesignIcons name="plus" size={30} color="#16a34a"/>
                     </TouchableOpacity>
                 </View>
             </View>
 
-            <GroceryListView />
-
+            <GroceryListView state={state} confirmationHandle={handleRef} toRemove={toRemove}/>
         </View>
-
-        <BottomSheet
-            ref={bottomSheetRef}
-            activeHeight={screenHeight * 0.95}
-            backdropColor="rgba(0,0,0,0.5)"
-            closeHeight={150}
-            backgroundColor="white"
-        >   
-            <CreateGroceryList bs={bottomSheetRef}/>
-        </BottomSheet>
-
-
+        
         <NavigationBar currentRoute="List"/>
+
+
+        <Confirmation ref={handleRef}>
+            <Text className="font-bold text-lg">Delete Grocery List Permanently</Text>
+            <View className="w-full">
+                <Text className="text-sm">Are you sure you want to permanently delete this grocery list? This is irreversible and cannot be undone.</Text>
+            </View>
+
+            <View className="w-full gap-4">
+                <TouchableOpacity className="rounded-xl border-green-600 border-2 p-4 w-full items-center" onPress={remove}>
+                    <Text className="font-bold">Delete Grocery List</Text> 
+                </TouchableOpacity>
+
+                <TouchableOpacity className="rounded-xl border-green-600 bg-green-600 border-2 p-4 w-full items-center" onPress={
+                    () => handleRef.current?.closeDialog()}>
+                    <Text className="text-white font-bold">Close</Text> 
+                </TouchableOpacity>
+            </View>
+        </Confirmation>
         </>
     )
 }
