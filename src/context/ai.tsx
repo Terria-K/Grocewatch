@@ -1,14 +1,16 @@
 import { createContext, useContext, useState } from "react";
 import { useProducts } from "./products";
-import { CachedModel, Chat, downloadModel, getCachedModels, Model, Tool } from "react-native-nobodywho";
 import { useGroceryList } from "./grocerylist";
+import { ChatSession, GenerativeModel, getAI, getGenerativeModel, GoogleAIBackend, Schema } from "@react-native-firebase/ai";
+import { getApp } from "@react-native-firebase/app";
+import { getAuth } from "@react-native-firebase/auth";
 
-function getProducts() {
+export function getProducts() {
     try 
     {
         let { products } = useProducts.getState();
 
-        return JSON.stringify(products);
+        return products;
     }
     catch (err) {
         console.log(err);
@@ -31,12 +33,12 @@ function getGroceryList(listName: string) {
     }
 }
 
-function getAllGroceryList() {
+export function getAllGroceryList() {
     try 
     {
         let { groceryList } = useGroceryList.getState();
 
-        return JSON.stringify(groceryList);
+        return groceryList;
     }
     catch (err) {
         console.log(err);
@@ -44,87 +46,48 @@ function getAllGroceryList() {
     }
 }
 
-const productTool = new Tool({
-    name: 'get_all_products',
-    description: 'Get all of the available products.',
-    parameters: [],
-    call: getProducts
-})
+export const productTool = {
+    functionDeclarations: [
+        {
+            name: "get_all_products",
+            description: "Retrieve the complete list of available product items, and prices",
+            parameters: Schema.object({
+                properties: {}
+            })
+        }
+    ]
+}
 
-const listTool = new Tool({
-    name: 'get_grocery_list',
-    description: 'Get all of the available products.',
-    parameters: [
-        { name: "listName", type: "string", description: "Name of the Grocery List." }
-    ],
-    call: getGroceryList
-})
+export const listAllTool = {
+    functionDeclarations: [
+        {
+            name: 'get_all_grocery_list',
+            description: 'Get all of the user grocery lists.',
+            parameters: Schema.object({
+                properties: {}
+            })
+        }
+    ]
+}
 
-const allListTool = new Tool({
-    name: 'get_all_grocery_list',
-    description: 'Get all of the available products.',
-    parameters: [],
-    call: getAllGroceryList
-})
-
-//export const xmlToolParser: ToolParser = (text: string): ToolParserResult | undefined => {
-//    const match = text.match(/<\|tool_call>call:(\w+)\{(.*?\}?)\}<tool_call\|>/);
-//
-//    if (!match) {
-//        return undefined;
-//    }
-//
-//    const functionName = match[1].trim();
-//
-//    let rawArgs = match[2].trim();
-//
-//    try {
-//        rawArgs = rawArgs.replace(/<\|"\|>/g, '"');
-//
-//        let jsonString = `{${rawArgs}}`;
-//
-//        if (!jsonString.startsWith('{') || !jsonString.endsWith('}')) {
-//            jsonString = `{${jsonString}}`;
-//        }
-//
-//        const validJsonArgs = jsonString.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '\$1"\$2":');
-//
-//        const parsedArguments = JSON.parse(validJsonArgs);
-//
-//        const cleanedTextContent = text
-//            .replace(/<\|tool_call>[\s\(\S\)]*?\<tool_call\|>/g, '') 
-//            .trim();
-//
-//
-//        return {
-//            toolCalls: [
-//                {
-//                    function: {
-//                        name: functionName,
-//                        arguments: parsedArguments 
-//                    }
-//                }
-//            ],
-//
-//            textContent: cleanedTextContent || "Executing requested tool."
-//        }
-//    } catch (err) {
-//        console.error("Gemma 4 Tool Call Parsing failed: ", err);
-//        return undefined;
-//    }
-//}
+export const listTool = {
+    functionDeclarations: [
+        {
+            name: 'get_grocery_list',
+            description: 'Get one of the user grocery list.',
+            parameters: Schema.object({
+                properties: {
+                    query: Schema.string({
+                        description: "Keyword to search for grocery list name"
+                    })
+                }
+            })
+        }
+    ]
+}
 
 
-function setupSystemPrompt() {
-    const getProducts = () => {
-        // TODO: setup local db and firebase db
-
-        const { products } = useProducts()
-
-        return JSON.stringify(products);
-    }
-    
-
+export function setupSystemPrompt() {
     return `
     You are a helpful grocery app manager, your goal is to assist the users to create and manage their grocery list.
     You are also able to help the users seeking in financial advice or strategies to be efficient at saving their money.
@@ -139,33 +102,47 @@ function setupSystemPrompt() {
 
     We are using Philippine Peso for pricing.
 
-    If a user suggests to create a grocery list, respond with your normal message content, followed by a blank line, and then place the following XML on its own new line.
+    ### CRITICAL FORMATTING RULES (DO NOT VIOLATE):
+    1. **Self-Closing Slash:** Every <UpdateProducts> tag MUST end with a space and a forward slash before the closing bracket: />. Never omit this.
+    2. **Attribute Keys:** The tag accepts two attributes only: id and products.
+    3. **JSON Structure inside Attributes:** The value of products must be a JSON-like array wrapped in double quotes ("), but using SINGLE quotes (') for all internal keys and string values. Example: products="[{'productID': '123', 'quantity': 2}]"
+    4. **Curly Braces:** Ensure every JSON object inside the array has opening { and closing } braces.
 
-    <CreateGroceryList name="<name>" products="<products>" />
+    ### INCORRECT OUTPUT EXAMPLES (AVOID THESE):
+    ❌ MISSING SLASH: <CreateGroceryList action_id="01M5A7XEZD7K9AP0JM21HNF6B5" name="Weekly Groceries" products="[{'productID': '1'}]"> (Missing />)
+    ❌ WRONG QUOTES: <CreateGroceryList action_id="01M5A7XEZD7K9AP0JM21HNF6B5" name="Weekly Groceries" products='[{"productID": "1"}]'> (Uses double quotes inside)
+    ❌ MISSING BRACES: <CreateGroceryList action_id="01M5A7XEZD7K9AP0JM21HNF6B5" name="Weekly Groceries" products="'productID': '1'"> (Missing {})
+
+    CRITICAL: Do NOT write conversational filler, summaries, or explanations. Your response must consist SOLELY of the raw XML tag starting with '<' and ending with '/>'.
+
+    If a user wants to create a grocery list, respond with your normal message content, followed by a blank line, and then place the following XML on its own new line.
+
+    <CreateGroceryList action_id="<id>" name="<name>" products="<products>" />
 
     If you need to output multiple XML tags, each tag must be separated from the others by a newline (one tag per line).
 
     ### Example Output: (Single XML)
     Sure, I've created your grocery list below.
 
-    <CreateGroceryList name="Weekly Groceries" products="[{'productID': '123', 'quantity': 2}]" />
+    <CreateGroceryList action_id="01M5A7XEZD7K9AP0JM21HNF6B5" name="Weekly Groceries" products="[{'productID': '123', 'quantity': 2}]" />
 
     ### Another Example Output: (Single XML)
     Here you go, I've created your grocery list.
 
-    <CreateGroceryList name="Weekly Groceries" products="[{'productID': '123', 'quantity': 2}]" />
+    <CreateGroceryList action_id="01M5A7XEZD7K9AP0JM21HNF6B5" name="Weekly Groceries" products="[{'productID': '123', 'quantity': 2}, {'productID': '456', 'quantity': 3}]" />
 
     Let me know if you need anything else, I got you covered.
 
     ### Example Output: (Multiple XMLs)
     I've created two list for you.
 
-    <CreateGroceryList name="Weekly Groceries" products="[{'productID': '123', 'quantity': 2}]" />
+    <CreateGroceryList action_id="01M5A7XEZD7K9AP0JM21HNF6B5" name="Weekly Groceries" products="[{'productID': '123', 'quantity': 2}]" />
 
-    <CreateGroceryList name="Weekly Groceries" products="[{'productID': '456', 'quantity': 5}]" />
+    <CreateGroceryList action_id="01M5A7XEZD7K9AP0J141HNF6B5" name="Weekly Groceries" products="[{'productID': '456', 'quantity': 5}]" />
 
 
-    where <name> is the name of a grocery list. If a name is not specified, you decided what the name is.
+    where <action_id> is an id generated by calling get_action_id tool, 
+    <name> is the name of a grocery list. If a name is not specified, you decided what the name is, and DO NOT ask the user to specify it.
     and [products] is an JSON array but with single quotes for keys and string (ex: { 'name': 'Apples' }) and with an object of type of OnCartProduct which reflects what the product user asked,
     YOU MUST NOT PUT XML AS AN INPUT FOR products.
     currently the type of a Product is 
@@ -175,45 +152,49 @@ function setupSystemPrompt() {
         quantity: number
     }
 
-    If a user suggest a specific categories that they wanted to add, you should filter the product only by that category.
+    a product cannot be repeated, use the quantity for repetition. A user might mispelled a product they requested to create, you need to know which product it is
+    by reading the closest product name in the product list.
+
+    If a user suggest a specific categories that they wanted to add, you should filter the products only by that category.
+    A user may also suggest a certain condition such as less calories, or cheapest price.
+    A user may also want multiple products into the list.
+
+    Example:
+    User: I want all fruits in my list
+    Assistant: Sure, here's your grocery list with all fruits in it.
+    <CreateGroceryList action_id="01M5A7XEZD7K9AP0JN51HNF6B5" name="Weekly Groceries" products="[{'productID': '0', 'quantity': 1}, {'productID': '2', 'quantity': 1}]" />
+
+    User: I want all items with less than 100 calories.
+    Assistant: Sure, here's your grocery list with all products less than 100 calories.
+    <CreateGroceryList action_id="01M5A7XEZD7K9AP0JN51HNF6B5" name="Weekly Groceries" products="[{'productID': '1', 'quantity': 1}, {'productID': '2', 'quantity': 1}, {'productID': '4', 'quantity': 1}, {'productID': '5', 'quantity': 1}]" />
+
 
     If a user wants to update a product on a grocery list, place the following XML on its own new line.
-
 
     <UpdateProducts groceryListID="<id>" products="<products>" />
 
     where <id> is the id of the grocery list, and [products] is an JSON array but with single quotes for keys and string (ex: { 'name': 'Apples' }) and with an object of type of OnCartProduct which reflects what the product user asked,
 
-    ### CRITICAL FORMATTING RULES (DO NOT VIOLATE):
-    1. **Self-Closing Slash:** Every <UpdateProducts> tag MUST end with a space and a forward slash before the closing bracket: />. Never omit this.
-    2. **Attribute Keys:** The tag accepts two attributes only: id and products.
-    3. **JSON Structure inside Attributes:** The value of products must be a JSON-like array wrapped in double quotes ("), but using SINGLE quotes (') for all internal keys and string values. Example: products="[{'productID': '123', 'quantity': 2}]"
-    4. **Curly Braces:** Ensure every JSON object inside the array has opening { and closing } braces.
-
-    CRITICAL: Do NOT write conversational filler, summaries, or explanations. Your response must consist SOLELY of the raw XML tag starting with '<' and ending with '/>'.
-
     ### INCORRECT OUTPUT EXAMPLES (AVOID THESE):
-    ❌ MISSING SLASH: <UpdateProducts id="123" products="[{'productID': '1'}]"> (Missing />)
-    ❌ WRONG QUOTES: <UpdateProducts id="123" products='[{"productID": "1"}]'> (Uses double quotes inside)
-    ❌ MISSING BRACES: <UpdateProducts id="123" products="'productID': '1'"> (Missing {})
-
-
+    ❌ MISSING SLASH: <UpdateProducts action_id="01M5A7XEZD7K9AP0JN51HNF6B5" id="123" products="[{'productID': '1'}]"> (Missing />)
+    ❌ WRONG QUOTES: <UpdateProducts action_id="01M5A7XEZD7K9AP0JN51HNF6B5" id="123" products='[{"productID": "1"}]'> (Uses double quotes inside)
+    ❌ MISSING BRACES: <UpdateProducts action_id="01M5A7XEZD7K9AP0JN51HNF6B5" id="123" products="'productID': '1'"> (Missing {})
 
     ### Example Output: (Single XML)
     User: Add 2 avocados in my Weekly Grocery List
     Assistant:
     Sure, I've updated your products below.
 
-    <UpdateProducts id="01BX5ZZKBKACTAV9WEVGEMMVS1" products="[{'productID': '123', 'quantity': 2}]" />
+    <UpdateProducts action_id="01M5A7XEZD7K9AP0JN51HNF6B5" id="01BX5ZZKBKACTAV9WEVGEMMVS1" products="[{'productID': '123', 'quantity': 2}]" />
 
     ### Example Output: (Multiple XMLs)
     User: Add 2 avocados in my Weekly Grocery List, and make the Sugar 3 in Party Grocery List
     Assistant:
-    I've created two list for you.
+    I've updated two list for you.
 
-    <UpdateProducts id="01BX5ZZKBKACTAV9WEVGEMMVS2" products="[{'productID': '123', 'quantity': 2}]" />
+    <UpdateProducts action_id="01M5A7XEZD7K9AP0JN51HNF6B5" id="01BX5ZZKBKACTAV9WEVGEMMVS2" products="[{'productID': '123', 'quantity': 2}]" />
 
-    <UpdateProducts id="01BX5ZZKBKACTAV9WEVGEMMVS1" products="[{'productID': '456', 'quantity': 5}]" />
+    <UpdateProducts action_id="01M5A7XEZD7K9AP0HN69HN4206" id="01BX5ZZKBKACTAV9WEVGEMMVS1" products="[{'productID': '456', 'quantity': 5}]" />
 
     To retrieve its id, use get_grocery_list with listName parameters that is specified by the users to be able to get the id. If it cannot be found, use
     get_all_grocery_list to see all the grocery list and find the closest one that you could see for an id.
@@ -222,14 +203,12 @@ function setupSystemPrompt() {
     `
 }
 
-type ProgressCallback = (downloaded: number, total: number) => void;
-
 const AIContext = createContext({} as AIProviderContext);
 
 export type AIProviderContext = {
-    downloadLLM: (progressCallback?: ProgressCallback) => Promise<void>,
-    launchChat: () => Promise<Chat | undefined>,
-    chat: Chat | undefined
+    launchChat: () => Promise<GenerativeModel | undefined>,
+    chat: ChatSession | undefined,
+    model?: GenerativeModel
 }
 
 type AIProviderProps = {
@@ -237,52 +216,47 @@ type AIProviderProps = {
 }
 
 export function AIProvider({ children }: AIProviderProps) {
-    const [chat, setChat] = useState<Chat>();
-
-    const downloadLLM = async (progressCallback?: ProgressCallback) => {
-        const modelPath = await downloadModel({
-            //modelPath: "huggingface:unsloth/gemma-4-E4B-it-GGUF/gemma-4-E4B-it-Q4_K_M.gguf",
-            //modelPath: "huggingface:LiquidAI/LFM2.5-1.2B-Thinking-GGUF/LFM2.5-1.2B-Thinking-Q4_K_M.gguf",
-            //modelPath: "huggingface:unsloth/Qwen3.5-0.8B-GGUF/Qwen3.5-0.8B-Q4_K_M.gguf",
-            modelPath: "huggingface:unsloth/gemma-4-E2B-it-GGUF/gemma-4-E2B-it-Q4_K_M.gguf",
-            onDownloadProgress: (downloaded, total) => {
-                if (progressCallback) {
-                    progressCallback(downloaded, total);
-                }
-            }
-        })
-
-        console.log(modelPath);
-    }
+    const [chat, setChat] = useState<ChatSession>();
+    const [model, setModel] = useState<GenerativeModel>();
 
     const launchChat = async () => {
-        let cachedModel: CachedModel | undefined = undefined;
-        for (const model of getCachedModels()) {
-            cachedModel = model;
-        }
+        const app = getApp();
+        const authInstance = getAuth(app);
+        //const appCheckInstance = initializeAppCheck(app, {
+        //    provider: new ReactNativeFirebaseAppCheckProvider({ android: { provider: "playIntegrity"} }),
+        //});
 
-        console.log(cachedModel);
+        const ai = getAI(app, {
+            auth: authInstance,
+            backend: new GoogleAIBackend()
+        });
 
-        if (!cachedModel) {
-            return undefined;
-        }
+        const model = getGenerativeModel(ai, { 
+                model: 'gemini-3.5-flash-lite', 
+                systemInstruction: setupSystemPrompt(), 
+                tools: [
+                    productTool,
+                    listAllTool
+                ],
+                generationConfig: {
+                    thinkingConfig: { includeThoughts: true }
+                }
+            }
+        )
 
-        const model = await Model.load({ modelPath: cachedModel.path  })
-        const chat = new Chat({ model, systemPrompt: setupSystemPrompt(), tools: [productTool, listTool, allListTool] })
+        setModel(model);
 
-        setChat(chat);
-
-        return chat;
+        return model;
     }
 
 
     return (
-        <AIContext.Provider value={{ downloadLLM, launchChat, chat}}>
+        <AIContext.Provider value={{ model, launchChat, chat}}>
             {children}
         </AIContext.Provider>
     )
 }
 
-export function useAI() {
+export function useAIChat() {
     return useContext(AIContext);
 }

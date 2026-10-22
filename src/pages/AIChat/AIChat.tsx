@@ -6,13 +6,15 @@ import NavigationBar from "../../components/NavigationBar";
 import { useMessage } from "../../context/messages";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ReactComponentRegistry, ReactComponentRegistryProvider } from "react-native-marked";
-import { ChatMessage, LoadingChatMessage } from "./ChatMessage";
+import { ChatMessage, LoadingChatMessage, ThinkingChatMessage } from "./ChatMessage";
 import TemplateBox from "./TemplateBox";
-import { useAI } from "../../context/ai";
+import { getAllGroceryList, getProducts, useAIChat } from "../../context/ai";
 import { OnCartProduct, useGroceryList } from "../../context/grocerylist";
 import { useProducts } from "../../context/products";
 import { ulid } from "react-native-ulid-jsi";
 import HorizontalSeparator from "../../components/HorizontalSeparator";
+import { useUser } from "../../context/user";
+import { Content, EnhancedGenerateContentResponse, GenerateContentStreamResult } from "@react-native-firebase/ai";
 
 
 type ProductSuggestionProps = {
@@ -24,22 +26,35 @@ function ProductSuggestion({ id , quantity }: ProductSuggestionProps) {
     const { products } = useProducts()
 
     const product = products.filter(x => x.productID === +id).at(0)
+    if (!product) {
+        return (
+            <View className="justify-center items-center">
+                <Text>Product not found</Text>
+            </View>
+        )
+    }
 
     return (
-        <View >
-            <Text className="font-bold">{product?.name}</Text>
-            <Text>{quantity} pc</Text>
+        <View className="flex-row justify-between items-center">
+            <View>
+                <Text className="font-bold">{product.name}</Text>
+                <Text>{quantity} pc</Text>
+            </View>
+            <View>
+                <Text className="font-bold">₱{product.price.toFixed(2)}</Text>
+            </View>
         </View>
     )
 }
 
 
 type ChatCreateGroceryListProps = {
+    action_id: string,
     name: string,
     products?: string
 }
 
-function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
+function ChatCreateGroceryList({ action_id, name, products }: ChatCreateGroceryListProps) {
     const [saved, setSaved] = useState(false)
 
     let rProduct: OnCartProduct[] | undefined = undefined
@@ -52,6 +67,7 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
                 return {
                     ...x,
                     productID: +x.productID,
+                    quantity: x.quantity ?? 1,
                     onCartID: ulid()
                 }
             })
@@ -62,6 +78,7 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
     }
 
     const groceryList = useGroceryList();
+    const user = useUser();
 
     const save = async () => {
         const lid = ulid();
@@ -77,7 +94,12 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
             defaultInviteRole: 'Viewer'
         })
 
+        user.increasedProductTrackedBy(rProduct?.length ?? 0);
+
+        user.increaseListCreated();
+
         await groceryList.saveGroceryList();
+        await user.save();
 
         setSaved(true)
     }
@@ -126,13 +148,13 @@ function ChatCreateGroceryList({ name, products }: ChatCreateGroceryListProps) {
 const components: ReactComponentRegistry = {
     CreateGroceryList: ({ props }) => {
         try {
-            const { name, products } = props as unknown as ChatCreateGroceryListProps;
+            const { name, products, action_id } = props as unknown as ChatCreateGroceryListProps;
             if (!name || name === '') {
                 return <Text style={{ color: '#ff0000' }}>Cannot do an action</Text>
             }
 
             return (
-                <ChatCreateGroceryList name={name} products={products}/>
+                <ChatCreateGroceryList action_id={action_id} name={name} products={products}/>
 
             )
         }
@@ -143,28 +165,28 @@ const components: ReactComponentRegistry = {
     }
 }
 
+let conversationHistory: Content[] = [];
+
 function ChatScreen() {
-    const { downloadLLM, launchChat, chat } = useAI();
-
-
+    const aiChat = useAIChat();
     const { messages, reload } = useMessage();
 
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false)
-    const [aiLoading, setAILoading] = useState(false)
     const [token, setToken] = useState('')
+    const [thinkingToken, setThinkingToken] = useState('')
+    const [thought, setThought] = useState(false)
+
 
     const scrollViewRef = useRef<ScrollViewInstance>(null);
 
 
     const handleSubmit = async () => {
+
         if (loading) {
-            chat?.stopGeneration();
             setLoading(false);
             return;
         }
-        await downloadLLM();
-        
 
 
         const mess = message.trim();
@@ -184,32 +206,147 @@ function ChatScreen() {
         scrollViewRef.current?.scrollToEnd({ animated: true })
 
         setToken('')
+        setThinkingToken('');
 
-        let leChat = chat;
+        let model = aiChat.model;
 
-        if (!leChat) {
-            setAILoading(true);
-            console.log("LOADING AGAIN?");
-            leChat = await launchChat();
-            if (!leChat) {
-                return;
-            }
-
-            setAILoading(false);
+        if (!aiChat.model) {
+            model = await aiChat.launchChat();
         }
 
-        console.log(leChat);
+        if (!model) {
+            setLoading(false);
+            return;
+        }
 
         try {
-            const responses = leChat!.ask(mess);
-
-            for await (const token of responses) {
-                setToken(prevText => prevText + token)
+            const handleStream = async (responses: GenerateContentStreamResult) => {
+                for await (const chunk of responses.stream) {
+                    const parts = chunk.candidates?.[0].content?.parts;
+                    if (parts) {
+                        for (const part of parts) {
+                            if (part.thought) {
+                                setThought(true);
+                                setThinkingToken(prev => prev + (part.text || ''))
+                            } else {
+                                setToken(prev => prev + (part.text || ''));
+                            }
+                        }
+                    }
+                }
             }
 
-            const finalMessage = await responses.completed();
+            const getCleanText = async (response: EnhancedGenerateContentResponse) => {
+                const parts = response.candidates?.[0]?.content?.parts;
 
-            messages.push({ message: finalMessage.toString()!, role: 'assistant'})
+                if (!parts) return response.text?.() || '';
+
+                return parts
+                    .filter(part => {
+                        console.log(part);
+                        return !part.thought && part.text
+                    })
+                    .map(part => part.text)
+                    .join('');
+            }
+
+            conversationHistory.push({
+                role: 'user',
+                parts: [{ text: mess }]
+            })
+
+            let responses = await model.generateContentStream({
+                contents: conversationHistory
+            });
+
+            await handleStream(responses);
+
+            const finalMessage = await responses.response;
+
+            let functionCalls = finalMessage.functionCalls();
+            const modelCandidateContent = finalMessage.candidates?.[0]?.content;
+            if (modelCandidateContent) {
+                modelCandidateContent.parts.forEach(part => {
+                    if (part.functionCall && !part.thoughtSignature && !part.thoughtSignature) {
+                        part.thoughtSignature = "skip_thought_signature_validator" as unknown as undefined;
+                    }
+                });
+                conversationHistory.push(modelCandidateContent);
+            }
+
+
+            let cleanMessage = await getCleanText(finalMessage);
+
+            const MAX_TURNS = 5;
+            let turnCount = 0;
+            let keepGoing = true;
+
+
+            if (functionCalls) {
+                while (keepGoing && turnCount < MAX_TURNS)
+                {
+                    const toolCallResponse = []
+                    for (const call of functionCalls) {
+                        let resultMessage: string | object = {}
+                        if (call.name === "get_all_products") {
+                            const products = getProducts() as object;
+
+                            const parsedProducts = typeof products === 'string' ? JSON.parse(products) : products;
+                            resultMessage = parsedProducts;
+                        }
+                        else if (call.name === "get_all_grocery_list") {
+                            const list = getAllGroceryList() as object;
+
+                            const parsedList = typeof list === 'string' ? JSON.parse(list) : list;
+                            resultMessage = parsedList;
+                        }
+                        else if (call.name === "get_action_id") {
+                            const id = ulid();
+
+                            resultMessage = id
+                        }
+
+                        toolCallResponse.push({
+                            functionResponse: {
+                                name: call.name,
+                                response: typeof resultMessage === 'object' ? { result: resultMessage } : { result: resultMessage }
+                            }
+                        })
+                    }
+
+                    conversationHistory.push({
+                        role: 'user',
+                        parts: toolCallResponse
+                    })
+
+                    responses = await model.generateContentStream({
+                        contents: conversationHistory
+                    })
+
+                    await handleStream(responses);
+                    const finalMessage = await responses.response;
+
+                    if (modelCandidateContent) {
+                        modelCandidateContent.parts.forEach(part => {
+                            if (part.functionCall && !part.thoughtSignature && !part.thoughtSignature) {
+                                part.thoughtSignature = "skip_thought_signature_validator" as unknown as undefined;
+                            }
+                        });
+
+                        conversationHistory.push(modelCandidateContent);
+                    }
+
+                    functionCalls = finalMessage.functionCalls();
+
+                    if (!functionCalls || functionCalls.length == 0) {
+                        keepGoing = false;
+                        cleanMessage = await getCleanText(finalMessage);
+                        break;
+                    }
+                }
+            }
+
+            messages.push({ message: cleanMessage, role: 'assistant'})
         }
         catch (err) {
             console.log(err)
@@ -218,6 +355,7 @@ function ChatScreen() {
         
         reload();
         setLoading(false);
+        setThought(false);
     }
 
     return (
@@ -244,7 +382,16 @@ function ChatScreen() {
                     }
 
                     {
-                        loading ? <LoadingChatMessage token={token}/> : null
+                        thought 
+                            ?
+                            <ThinkingChatMessage token={thinkingToken}/>
+                            : null
+                    }
+
+                    {
+                        loading 
+                            ? <LoadingChatMessage token={token}/> 
+                            : null
                     }
 
                     </ScrollView>
@@ -252,16 +399,6 @@ function ChatScreen() {
                 : 
                     null
             }
-
-            {
-                aiLoading
-                    ? 
-                    <View className="items-center">
-                        <Text className="font-bold text-xl">Loading Model</Text>
-                    </View> 
-                    : null
-            }
-
 
             <View className="justify-end items-end">
                 <View className="flex-row gap-8 border-gray-300 border-2 border-solid rounded-lg px-4 py-1 
@@ -331,9 +468,8 @@ function AIChat() {
     <>
     <View style={styles.container}>
         <Animated.View style={[{bottom: heightPercentage, paddingBottom: bottomPadding}, styles.containerScreen]}>
-            <View style={styles.icons}>
+            <View>
                 <Lucide name="settings" size={30} />
-                <Lucide name="history" size={30} />
             </View>
 
             <View style={styles.header}>
@@ -363,11 +499,6 @@ const styles = StyleSheet.create({
     containerScreen: {
         gap: 16,
         height: '100%'
-    },
-    
-    icons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between'
     },
 
     header: {

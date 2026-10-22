@@ -39,30 +39,30 @@ function ProductCard({ products, product, onPress, onCheck, onRemove }: ProductC
 
     return (
         <Animated.View layout={LinearTransition.springify().damping(100).stiffness(0)}>
-        <TouchableNativeFeedback onPress={() => onPress(product)}>
-            <View className="flex-row w-full bg-gray-100 border-b border-t border-gray-400 p-4 gap-2">
-                <Checkbox active={product.checked} onToggle={onProductCheck}/>
-                <View className="w-[40%] justify-center">
-                    <Text className="font-bold">{prod?.name}</Text>
-                    <Text className="text-sm">{prod?.category}</Text>
-                </View>
+            <TouchableNativeFeedback onPress={() => onPress(product)}>
+                <View className="flex-row w-full bg-gray-100 border-b border-t border-gray-400 p-4 gap-2">
+                    <Checkbox active={product.checked} onToggle={onProductCheck}/>
+                    <View className="w-[40%] justify-center" style={{ opacity: product.checked ? 0.5 : 1 }}>
+                        <Text className="font-bold">{prod?.name}</Text>
+                        <Text className="text-sm">{prod?.category}</Text>
+                    </View>
 
-                <View className="flex-1 justify-center items-center w-[60%]">
-                    <Text>{product.quantity} {prod?.unit}</Text>
-                    <Text className="text-green-700 font-bold">₱{prod ? (prod.price.mul(product.quantity)).toFixed(2) : 0}</Text>
-                </View>
+                    <View className="flex-1 justify-center items-center w-[60%]" style={{ opacity: product.checked ? 0.5 : 1 }}>
+                        <Text>{product.quantity} {prod?.unit}</Text>
+                        <Text className="text-green-700 font-bold">₱{prod ? (prod.price.mul(product.quantity)).toFixed(2) : 0}</Text>
+                    </View>
 
-                <View className="flex-row items-center gap-4">
-                    <TouchableOpacity>
-                        <MaterialDesignIcons name="pencil-outline" size={20} color="#16a34a"/>
-                    </TouchableOpacity>
+                    <View className="flex-row items-center gap-4">
+                        <TouchableOpacity>
+                            <MaterialDesignIcons name="pencil-outline" size={20} color="#16a34a"/>
+                        </TouchableOpacity>
 
-                    <TouchableOpacity>
-                        <MaterialDesignIcons name="trash-can-outline" size={20} color="#dc2626" onPress={removeProduct}/>
-                    </TouchableOpacity>
+                        <TouchableOpacity>
+                            <MaterialDesignIcons name="trash-can-outline" size={20} color="#dc2626" onPress={removeProduct}/>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
-        </TouchableNativeFeedback>
+            </TouchableNativeFeedback>
         </Animated.View>
     )
 }
@@ -117,7 +117,7 @@ type GroceryListCardProps = {
 function GroceryListCard({ name, products, budget, calorie, onPress }: GroceryListCardProps) {
     const baseProducts = useProducts(x => x.products);
 
-    const pr = products.map(x => {
+    const pr = products.filter(x => x.checked).map(x => {
         const product = baseProducts.filter(p => p.productID === x.productID).at(0);
         if (!product) {
             return new Decimal(0);
@@ -167,7 +167,7 @@ function GroceryListCard({ name, products, budget, calorie, onPress }: GroceryLi
                         <View className="h-2 bg-gray-300 w-full rounded" >
                             <View className="h-2 rounded" style={{
                                 backgroundColor: budget.greaterThan(spent) ? "#16a34a" : "#dc2626",
-                                width: `${percentage}%`,
+                                width: `${Math.min(percentage, 100)}%`,
                             }}/>
                         </View>
                     </View>
@@ -262,7 +262,7 @@ function ManageGroceryList({ route }: ManageGroceryListProps) {
     const products = useProducts(x => x.products);
     const insets = useSafeAreaInsets();
 
-    const bottomPadding = 90 + (insets.bottom > 0 ? insets.bottom : 16) + 16;
+    const bottomPadding = 30 + (insets.bottom > 0 ? insets.bottom : 16) + 16;
 
     const addButton = () => {
         if (groceryList) {
@@ -324,18 +324,21 @@ function ManageGroceryList({ route }: ManageGroceryListProps) {
     const bottomSheetRef = useRef<BottomSheetHandle>(null);
     const manageHandleRef = useRef<BottomSheetHandle>(null);
 
-    const sortedUncheckedProducts = useMemo(() => {
-        if (!groceryList?.products) { return [] }
-
-        return [...groceryList.products].filter(x => !x.checked).sort((a, b) => {
-            return a.onCartID.localeCompare(b.onCartID);
-        })
-    }, [groceryList?.products])
-
     const sortedCheckedProducts = useMemo(() => {
         if (!groceryList?.products) { return [] }
 
-        return [...groceryList.products].filter(x => x.checked).sort((a, b) => {
+        return [...groceryList.products].sort((a, b) => {
+            if (a.checked) {
+                return 1;
+            }
+
+            if (b.checked) {
+                return -1;
+            }
+
+            if (a.checked && b.checked) {
+                return a.onCartID.localeCompare(b.onCartID);
+            }
 
             return a.onCartID.localeCompare(b.onCartID);
         })
@@ -385,16 +388,9 @@ function ManageGroceryList({ route }: ManageGroceryListProps) {
             </View>
 
             <Animated.ScrollView entering={FadeIn} exiting={FadeOut} className="rounded-xl border flex-1 gap-8" showsVerticalScrollIndicator={false}>
-            <View className="gap-8">
-                <View>
-                {sortedUncheckedProducts.map(
-                    (item) => <ProductCard onRemove={onRemove} onPress={onView} products={products} product={item} key={item.productID.toString()} onCheck={onChecked}/>)}
-                </View>
-
-                <View>
+            <View>
                 {sortedCheckedProducts.map(
                     (item) => <ProductCard onRemove={onRemove} onPress={onView} products={products} product={item} key={item.productID.toString()} onCheck={onChecked}/>)}
-                </View>
             </View>
 
             </Animated.ScrollView>

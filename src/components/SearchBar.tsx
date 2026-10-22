@@ -2,12 +2,14 @@ import MaterialDesignIcons from "@react-native-vector-icons/material-design-icon
 import { StyleSheet, TextInput, View } from "react-native";
 
 function SearchBar(props: {
-    placeholder: string
+    placeholder: string,
+    onInput: (text: string) => void
 }) {
     return (
         <View style={styles.container}>
             <MaterialDesignIcons name="magnify" color="#9ca3af"/>
             <TextInput
+                onChangeText={props.onInput}
                 style={styles.textInput}
                 placeholderTextColor="#9ca3af"
                 placeholder={props.placeholder}/>

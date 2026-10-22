@@ -71,7 +71,7 @@ function Grocery({ id, name, count, budget, products, onPress, remove }: Grocery
                         <View className="h-2 bg-gray-300 w-full rounded" >
                             <View className="h-2 rounded" style={{
                                 backgroundColor: budget.greaterThan(spent) ? "#16a34a" : "#dc2626",
-                                width: `${percentage}%`,
+                                width: `${Math.min(percentage, 100)}%`,
                             }}/>
                         </View>
                     </View>
@@ -204,7 +204,7 @@ function GroceryList() {
                     <Text className="font-bold text-white text-2xl">Grocewatch</Text>
                     <Text>Welcome, User!</Text>
                 </View>
-                <TouchableOpacity className="w-10 h-10 rounded justify-center items-center">
+                <TouchableOpacity className="w-10 h-10 rounded justify-center items-center" onPress={() => navigation.navigate("Notifications")}>
                     <Lucide name="bell" size={25} color="#FFFFFF"/>
                 </TouchableOpacity>
             </View>

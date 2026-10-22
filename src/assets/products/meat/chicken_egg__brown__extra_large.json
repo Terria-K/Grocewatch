@@ -1,0 +1,125 @@
+{
+    "commodity": "Chicken Egg (Brown, Extra Large)",
+    "unit_specification": "pc",
+    "calories": 90,
+    "current_prices": {
+        "lowest_price": null,
+        "highest_price": null,
+        "prevailing_price": null,
+        "reporting_markets_count": 0,
+        "prices_by_market": {
+            "COMMONWEALTH MARKET": null,
+            "GUADALUPE PUBLIC MARKET": null,
+            "NEW LAS PINAS CITY PUBLIC MARKET": null,
+            "MARIKINA PUBLIC MARKET": null,
+            "MUNOZ MARKET": null,
+            "PASAY CITY MARKET": null,
+            "MUTYA NG PASIG MEGA MARKET": null,
+            "QUINTA MARKET": null,
+            "SAN ANDRES MARKET": null,
+            "MEGA Q MART": null,
+            "PAMILIHANG LUNGSOD NG MUNTINLUPA": null,
+            "MALABON CENTRAL MARKET": null,
+            "PRITIL MARKET": null,
+            "MAYPAJO PUBLIC MARKET": null,
+            "PACO MARKET": null,
+            "DAGONOY MARKET": null,
+            "TRABAJO MARKET": null,
+            "BLUMENTRITT MARKET": null,
+            "MANDALUYONG PUBLIC MARKET I": null,
+            "NAVOTAS AGORA MARKET": null,
+            "LA HUERTA MARKET": null,
+            "CARTIMAR MARKET": null,
+            "GRACE MARKETPLACE (PATEROS)": null,
+            "MURPHY MARKET": null,
+            "KAMUNING MARKET": null,
+            "AGORA PUBLIC MARKET (SAN JUAN)": null,
+            "BICUTAN MARKET": null,
+            "TAGUIG PEOPLE'S MARKET": null,
+            "NEW MARULAS PUBLIC MARKET": null,
+            "BALINTAWAK MARKET (CLOVERLEAF)": null,
+            "FARMERS MARKET": null,
+            "HULONG DUHAT PUBLIC MARKET": null,
+            "KMLV NEW KARUHATAN MARKET": null,
+            "MANDALUYONG PUBLIC MARKET II": null,
+            "NEW PARANG MARKET": null,
+            "NORTH DIVERSION MARKET": null,
+            "POBLACION PUBLIC MARKET": null,
+            "SUKI MARKET": null
+        }
+    },
+    "history_last_90_days_weekly": [
+        {
+            "date": "2026-08-09",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-08-16",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-08-23",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-08-30",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-09-06",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-09-13",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-09-20",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-09-27",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-10-04",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-10-11",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-10-18",
+            "prevailing_price": 0,
+            "lowest_price": 0,
+            "highest_price": 0
+        },
+        {
+            "date": "2026-10-25",
+            "prevailing_price": null,
+            "lowest_price": null,
+            "highest_price": null
+        }
+    ]
+}

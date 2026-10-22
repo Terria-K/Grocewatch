@@ -7,10 +7,12 @@ import { ulid } from "react-native-ulid-jsi";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../components/NavigationBar";
+import { useUser } from "../../context/user";
 
 
 function CreateGroceryList() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const user = useUser();
 
     const [name, setName] = useState('');
     const [budgetLimit, setBudgetLimit] = useState('');
@@ -25,7 +27,7 @@ function CreateGroceryList() {
         navigation.goBack();
     }
 
-    const create = () => {
+    const create = async () => {
         if (name === '') {
             ToastAndroid.show('Name field is required!', ToastAndroid.SHORT);
             return;
@@ -57,7 +59,10 @@ function CreateGroceryList() {
         setBudgetLimit('')
         setCalorieLimit('')
 
-        groceryList.saveGroceryList();
+        user.increaseListCreated();
+
+        await groceryList.saveGroceryList();
+        await user.save();
 
         navigation.goBack();
     }
@@ -74,7 +79,12 @@ function CreateGroceryList() {
 
     return (
         <View className="px-4 pt-10 gap-8 flex-1">
-            <Text className="font-bold text-2xl">Create Grocery List</Text>
+            <View className="flex-row gap-2">
+                <TouchableOpacity className="justify-center" onPress={() => navigation.goBack()}>
+                    <MaterialDesignIcons name="arrow-left" size={26}/>
+                </TouchableOpacity>
+                <Text className="font-bold text-2xl">Create Grocery List</Text>
+            </View>
 
             <View className="border-gray-500 border border-solid rounded-lg p-4 gap-4">
                 <Text className="text-green-600 font-bold">List Details</Text>

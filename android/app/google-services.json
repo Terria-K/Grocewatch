@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "236570057885",
+    "project_id": "grocewatch",
+    "storage_bucket": "grocewatch.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:236570057885:android:422112f1135a8b4cee4874",
+        "android_client_info": {
+          "package_name": "com.grocewatch"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "236570057885-hg8v93bg7hfve5jovli4k3e9qtg01tai.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.grocewatch",
+            "certificate_hash": "13c067bde828dd055d16cc686b08b68b23801afa"
+          }
+        },
+        {
+          "client_id": "236570057885-og428rhaiqnb7a7baeat1grn9pfv35dl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDU2KU-PplTYCmYR8koLhqraQX8EK3mqhI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "236570057885-og428rhaiqnb7a7baeat1grn9pfv35dl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

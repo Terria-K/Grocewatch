@@ -1,0 +1,125 @@
+{
+    "commodity": "Pork Belly (Liempo)",
+    "unit_specification": "kg",
+    "calories": 518,
+    "current_prices": {
+        "lowest_price": 300.0,
+        "highest_price": 470.0,
+        "prevailing_price": 370.0,
+        "reporting_markets_count": 36,
+        "prices_by_market": {
+            "COMMONWEALTH MARKET": 330.0,
+            "GUADALUPE PUBLIC MARKET": 420.0,
+            "NEW LAS PINAS CITY PUBLIC MARKET": 335.0,
+            "MARIKINA PUBLIC MARKET": 370.0,
+            "MUNOZ MARKET": 360.0,
+            "PASAY CITY MARKET": 370.0,
+            "MUTYA NG PASIG MEGA MARKET": 360.0,
+            "QUINTA MARKET": 400.0,
+            "SAN ANDRES MARKET": 370.0,
+            "MEGA Q MART": 360.0,
+            "PAMILIHANG LUNGSOD NG MUNTINLUPA": 370.0,
+            "MALABON CENTRAL MARKET": 380.0,
+            "PRITIL MARKET": 410.0,
+            "MAYPAJO PUBLIC MARKET": 360.0,
+            "PACO MARKET": 350.0,
+            "DAGONOY MARKET": 380.0,
+            "TRABAJO MARKET": 450.0,
+            "BLUMENTRITT MARKET": 430.0,
+            "MANDALUYONG PUBLIC MARKET I": null,
+            "NAVOTAS AGORA MARKET": 380.0,
+            "LA HUERTA MARKET": 370.0,
+            "CARTIMAR MARKET": 420.0,
+            "GRACE MARKETPLACE (PATEROS)": null,
+            "MURPHY MARKET": 370.0,
+            "KAMUNING MARKET": 370.0,
+            "AGORA PUBLIC MARKET (SAN JUAN)": 400.0,
+            "BICUTAN MARKET": 360.0,
+            "TAGUIG PEOPLE'S MARKET": 370.0,
+            "NEW MARULAS PUBLIC MARKET": 370.0,
+            "BALINTAWAK MARKET (CLOVERLEAF)": 300.0,
+            "FARMERS MARKET": 470.0,
+            "HULONG DUHAT PUBLIC MARKET": 390.0,
+            "KMLV NEW KARUHATAN MARKET": 360.0,
+            "MANDALUYONG PUBLIC MARKET II": 360.0,
+            "NEW PARANG MARKET": 340.0,
+            "NORTH DIVERSION MARKET": 310.0,
+            "POBLACION PUBLIC MARKET": 340.0,
+            "SUKI MARKET": 370.0
+        }
+    },
+    "history_last_90_days_weekly": [
+        {
+            "date": "2026-08-09",
+            "prevailing_price": 340.4,
+            "lowest_price": 276.0,
+            "highest_price": 432.4
+        },
+        {
+            "date": "2026-08-16",
+            "prevailing_price": 342.99,
+            "lowest_price": 278.1,
+            "highest_price": 435.69
+        },
+        {
+            "date": "2026-08-23",
+            "prevailing_price": 345.58,
+            "lowest_price": 280.2,
+            "highest_price": 438.98
+        },
+        {
+            "date": "2026-08-30",
+            "prevailing_price": 348.17,
+            "lowest_price": 282.3,
+            "highest_price": 442.27
+        },
+        {
+            "date": "2026-09-06",
+            "prevailing_price": 350.76,
+            "lowest_price": 284.4,
+            "highest_price": 445.56
+        },
+        {
+            "date": "2026-09-13",
+            "prevailing_price": 353.35,
+            "lowest_price": 286.5,
+            "highest_price": 448.85
+        },
+        {
+            "date": "2026-09-20",
+            "prevailing_price": 355.94,
+            "lowest_price": 288.6,
+            "highest_price": 452.14
+        },
+        {
+            "date": "2026-09-27",
+            "prevailing_price": 358.53,
+            "lowest_price": 290.7,
+            "highest_price": 455.43
+        },
+        {
+            "date": "2026-10-04",
+            "prevailing_price": 361.12,
+            "lowest_price": 292.8,
+            "highest_price": 458.72
+        },
+        {
+            "date": "2026-10-11",
+            "prevailing_price": 363.71,
+            "lowest_price": 294.9,
+            "highest_price": 462.01
+        },
+        {
+            "date": "2026-10-18",
+            "prevailing_price": 366.3,
+            "lowest_price": 297.0,
+            "highest_price": 465.3
+        },
+        {
+            "date": "2026-10-25",
+            "prevailing_price": 370.0,
+            "lowest_price": 300.0,
+            "highest_price": 470.0
+        }
+    ]
+}

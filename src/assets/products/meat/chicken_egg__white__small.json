@@ -1,0 +1,125 @@
+{
+    "commodity": "Chicken Egg (White, Small)",
+    "unit_specification": "pc",
+    "calories": 72,
+    "current_prices": {
+        "lowest_price": 6.5,
+        "highest_price": 8.5,
+        "prevailing_price": 8.0,
+        "reporting_markets_count": 28,
+        "prices_by_market": {
+            "COMMONWEALTH MARKET": 8.0,
+            "GUADALUPE PUBLIC MARKET": 7.0,
+            "NEW LAS PINAS CITY PUBLIC MARKET": 8.0,
+            "MARIKINA PUBLIC MARKET": null,
+            "MUNOZ MARKET": 7.0,
+            "PASAY CITY MARKET": 7.0,
+            "MUTYA NG PASIG MEGA MARKET": 7.5,
+            "QUINTA MARKET": null,
+            "SAN ANDRES MARKET": 7.5,
+            "MEGA Q MART": 8.5,
+            "PAMILIHANG LUNGSOD NG MUNTINLUPA": 8.0,
+            "MALABON CENTRAL MARKET": 8.0,
+            "PRITIL MARKET": null,
+            "MAYPAJO PUBLIC MARKET": 7.5,
+            "PACO MARKET": 8.0,
+            "DAGONOY MARKET": 8.0,
+            "TRABAJO MARKET": 7.0,
+            "BLUMENTRITT MARKET": null,
+            "MANDALUYONG PUBLIC MARKET I": null,
+            "NAVOTAS AGORA MARKET": 7.5,
+            "LA HUERTA MARKET": null,
+            "CARTIMAR MARKET": 8.0,
+            "GRACE MARKETPLACE (PATEROS)": 7.0,
+            "MURPHY MARKET": 7.5,
+            "KAMUNING MARKET": 7.0,
+            "AGORA PUBLIC MARKET (SAN JUAN)": 8.0,
+            "BICUTAN MARKET": 7.5,
+            "TAGUIG PEOPLE'S MARKET": 8.0,
+            "NEW MARULAS PUBLIC MARKET": 8.0,
+            "BALINTAWAK MARKET (CLOVERLEAF)": null,
+            "FARMERS MARKET": null,
+            "HULONG DUHAT PUBLIC MARKET": 8.0,
+            "KMLV NEW KARUHATAN MARKET": null,
+            "MANDALUYONG PUBLIC MARKET II": 6.5,
+            "NEW PARANG MARKET": 8.0,
+            "NORTH DIVERSION MARKET": 7.0,
+            "POBLACION PUBLIC MARKET": 8.0,
+            "SUKI MARKET": null
+        }
+    },
+    "history_last_90_days_weekly": [
+        {
+            "date": "2026-08-09",
+            "prevailing_price": 7.36,
+            "lowest_price": 5.98,
+            "highest_price": 7.82
+        },
+        {
+            "date": "2026-08-16",
+            "prevailing_price": 7.42,
+            "lowest_price": 6.03,
+            "highest_price": 7.88
+        },
+        {
+            "date": "2026-08-23",
+            "prevailing_price": 7.47,
+            "lowest_price": 6.07,
+            "highest_price": 7.94
+        },
+        {
+            "date": "2026-08-30",
+            "prevailing_price": 7.53,
+            "lowest_price": 6.12,
+            "highest_price": 8.0
+        },
+        {
+            "date": "2026-09-06",
+            "prevailing_price": 7.58,
+            "lowest_price": 6.16,
+            "highest_price": 8.06
+        },
+        {
+            "date": "2026-09-13",
+            "prevailing_price": 7.64,
+            "lowest_price": 6.21,
+            "highest_price": 8.12
+        },
+        {
+            "date": "2026-09-20",
+            "prevailing_price": 7.7,
+            "lowest_price": 6.25,
+            "highest_price": 8.18
+        },
+        {
+            "date": "2026-09-27",
+            "prevailing_price": 7.75,
+            "lowest_price": 6.3,
+            "highest_price": 8.24
+        },
+        {
+            "date": "2026-10-04",
+            "prevailing_price": 7.81,
+            "lowest_price": 6.34,
+            "highest_price": 8.3
+        },
+        {
+            "date": "2026-10-11",
+            "prevailing_price": 7.86,
+            "lowest_price": 6.39,
+            "highest_price": 8.36
+        },
+        {
+            "date": "2026-10-18",
+            "prevailing_price": 7.92,
+            "lowest_price": 6.43,
+            "highest_price": 8.41
+        },
+        {
+            "date": "2026-10-25",
+            "prevailing_price": 8.0,
+            "lowest_price": 6.5,
+            "highest_price": 8.5
+        }
+    ]
+}

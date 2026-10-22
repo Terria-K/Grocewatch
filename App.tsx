@@ -1,6 +1,6 @@
 import "./src/global.css";
 
-import { Appearance, Platform, StatusBar, UIManager, useColorScheme } from 'react-native';
+import { Appearance, StatusBar, useColorScheme } from 'react-native';
 import {
   SafeAreaProvider,
 } from 'react-native-safe-area-context';
@@ -18,6 +18,12 @@ import ManageGroceryList from "./src/pages/GroceryList/ManageGroceryList";
 import ProductPage, { ProductPopup } from "./src/pages/Products";
 import type { RootStackParamList } from "./src/components/NavigationBar";
 import CreateGroceryList from "./src/pages/GroceryList/CreateGroceryList";
+import Notifications from "./src/pages/Notifications";
+import PriceHistory from "./src/pages/PriceHistory";
+import CreateAccount from "./src/pages/Profiles/CreateAccount";
+import Login from "./src/pages/Profiles/Login";
+import { useEffect } from "react";
+import { loadProduct, useProducts } from "./src/context/products";
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
@@ -27,6 +33,14 @@ function App() {
     const isDarkMode = useColorScheme() === 'dark';
     const navigationRef = createNavigationContainerRef();
 
+    const products = useProducts();
+
+    useEffect(() => {
+        loadProduct().then(x => {
+            console.log(x);
+            products.load(x);
+        });
+    }, [])
 
     return (
         <NavigationContainer ref={navigationRef}>
@@ -48,6 +62,22 @@ function App() {
                             animation: 'slide_from_bottom'
                         }}/>
                         <Stack.Screen name="AddProduct" component={ProductPopup} options={{
+                            animation: 'slide_from_bottom'
+                        }}/>
+
+                        <Stack.Screen name="ProductHistory" component={PriceHistory} options={{
+                            animation: 'slide_from_bottom'
+                        }}/>
+
+                        <Stack.Screen name="CreateAccount" component={CreateAccount} options={{
+                            animation: 'slide_from_bottom'
+                        }}/>
+
+                        <Stack.Screen name="Login" component={Login} options={{
+                            animation: 'slide_from_bottom'
+                        }}/>
+
+                        <Stack.Screen name="Notifications" component={Notifications} options={{
                             animation: 'slide_from_bottom'
                         }}/>
                     </Stack.Navigator>

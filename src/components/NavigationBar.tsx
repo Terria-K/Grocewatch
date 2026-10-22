@@ -16,7 +16,13 @@ export type RootStackParamList = {
   } | undefined,
   AddProduct: {
       groceryListID: string
-  } | undefined
+  } | undefined,
+  ProductHistory: {
+      productID: number 
+  } | undefined,
+  Notifications: undefined,
+  CreateAccount: undefined,
+  Login: undefined,
 };
 
 type NavigationProp = {

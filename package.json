@@ -10,6 +10,11 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-firebase/ai": "^26.4.0",
+    "@react-native-firebase/app": "^26.4.0",
+    "@react-native-firebase/app-check": "^26.4.0",
+    "@react-native-firebase/auth": "^26.4.0",
+    "@react-native-firebase/firestore": "^26.4.0",
     "@react-native-vector-icons/fontawesome5": "^13.1.4",
     "@react-native-vector-icons/ionicons": "^13.1.4",
     "@react-native-vector-icons/lucide": "^13.1.4",

@@ -54,9 +54,9 @@ function Checkbox({ active, onToggle }: CheckboxProps) {
     })
 
     return <Pressable className="justify-center" onPress={pressed}>
-        <View className="border border-black rounded-xl overflow-hidden">
+        <View className="border border-green-600 rounded-xl overflow-hidden">
             <Animated.View style={checkBoxStyle}>
-                <MaterialDesignIcons name="checkbox-marked" size={30} />
+                <MaterialDesignIcons name="checkbox-marked" size={30} color="#16a34a" />
             </Animated.View>
         </View>
     </Pressable>

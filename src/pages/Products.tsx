@@ -9,7 +9,8 @@ import BottomSheet, { BottomSheetHandle } from "../components/BottomSheet";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useGroceryList } from "../context/grocerylist";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useUser } from "../context/user";
 
 
 const { height: screenHeight} = Dimensions.get('screen');
@@ -97,6 +98,7 @@ type ProductAddViewProps = {
 function ProductAddView({ onBack, productID, groceryListID }: ProductAddViewProps) {
     const [quantity, setQuantity] = useState('');
     const groceryListState = useGroceryList();
+    const user = useUser();
 
     const addProduct = async () => {
         let realQuantity = +quantity;
@@ -106,10 +108,12 @@ function ProductAddView({ onBack, productID, groceryListID }: ProductAddViewProp
 
         if (groceryListID) {
             groceryListState.addProduct(groceryListID, productID, realQuantity);
+            user.increasedProductTracked();
         }
 
         onBack();
         await groceryListState.saveGroceryList();
+        await user.save();
     }
 
     return (
@@ -159,7 +163,7 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
     const products = useProducts(x => x.products);
     const insets = useSafeAreaInsets();
     const bottomSheetRef = useRef<BottomSheetHandle>(null);
-    const navigation = useNavigation();
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     
     const [productID, setProductID] = useState(0);
     const [category, setCategory] = useState([
@@ -194,8 +198,16 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
     const bottomPadding = 80 + (insets.bottom > 0 ? insets.bottom : 20) + 20;
 
     const productPressed = (id: number) => {
-        setProductID(id);
-        bottomSheetRef.current?.openSheet();
+        if (popup) {
+            setProductID(id);
+            bottomSheetRef.current?.openSheet();
+            return;
+        }
+        navigation.navigate("ProductHistory", { productID: id });
+    }
+
+    const onSearch = (text: string) => {
+        console.log(text);
     }
 
     return (
@@ -206,7 +218,7 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
             </View>
 
             <View className="flex-row items-center gap-2">
-                <SearchBar placeholder="Search products"/>
+                <SearchBar placeholder="Search products" onInput={onSearch}/>
             </View>
 
             <ScrollView contentContainerStyle={{flexDirection: 'row', gap: 8}} style={{flexGrow: 0}} horizontal={true} showsHorizontalScrollIndicator={false}>
