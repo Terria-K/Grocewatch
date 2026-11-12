@@ -3,28 +3,31 @@ import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import Checkbox from "../../components/Checkbox";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { ConfirmationHandle } from "../../components/Confirmation";
-import { GroceryList, useGroceryList } from "../../context/grocerylist";
+import { GroceryList, useGroceryList, UserRole } from "../../context/grocerylist";
 import { useEffect, useState } from "react";
 import { getAuth } from "@react-native-firebase/auth";
-import { collection, doc, getDoc, getDocs, getFirestore, query, updateDoc, where } from "@react-native-firebase/firestore";
+import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where } from "@react-native-firebase/firestore";
 import HorizontalSeparator from "../../components/HorizontalSeparator";
-
-type Role = 'Admin' | 'Editor' | 'Viewer';
-
-type ShareGroceryListProps = {
-    shareHandleRef: React.RefObject<ConfirmationHandle | null>,
-    groceryList: GroceryList | undefined
-}
+import { generateColorFromText } from "../../utils/utils";
 
 type InvitedUser = {
     firstName: string,
     lastName: string,
     email: string,
     userID: string,
-    role: Role
+    role: UserRole,
+    toBeDeleted: boolean,
+    isPending: boolean
 }
 
-function ShareGroceryList({ groceryList, shareHandleRef }: ShareGroceryListProps) {
+
+type ShareGroceryListProps = {
+    shareHandleRef: React.RefObject<ConfirmationHandle | null>,
+    groceryList: GroceryList | undefined,
+    role: UserRole
+}
+
+function ShareGroceryList({ groceryList, shareHandleRef, role }: ShareGroceryListProps) {
     const [inviteEmail, setInviteEmail] = useState('');
     const [users, setUsers] = useState<InvitedUser[]>([]);
     const groceryListState = useGroceryList();
@@ -45,6 +48,8 @@ function ShareGroceryList({ groceryList, shareHandleRef }: ShareGroceryListProps
             return [];
         }
 
+        console.log(groceryList);
+
 
         const userRef = collection(getFirestore(), "users");
 
@@ -57,12 +62,15 @@ function ShareGroceryList({ groceryList, shareHandleRef }: ShareGroceryListProps
             const email = realUser.get("emailAddress");
             const firstName: string = realUser.get("firstName");
             const lastName: string = realUser.get("lastName");
+            const isPending: boolean = user.isPending ?? false;
             userDisplay.push({
                 email: email,
                 firstName: firstName,
                 lastName: lastName,
                 userID: user.userID,
-                role: user.role
+                role: user.role,
+                toBeDeleted: false,
+                isPending: isPending
             })
         }
 
@@ -87,6 +95,8 @@ function ShareGroceryList({ groceryList, shareHandleRef }: ShareGroceryListProps
         if (!groceryList) {
             return;
         }
+
+        await groceryListState.saveGroceryList(groceryList.grocerylistID);
 
         const user = getAuth().currentUser;
         if (!user) {
@@ -113,34 +123,88 @@ function ShareGroceryList({ groceryList, shareHandleRef }: ShareGroceryListProps
 
         const groceryListRef = collection(getFirestore(), "grocerylist");
         const document = doc(groceryListRef, groceryList.grocerylistID);
+        
+        const grocery = await getDoc(document);
+        const users = grocery.get("users");
+        const usersID = grocery.get("usersID");
+        
+        const userList = users || [];
+        const userIDList = usersID || [];
+        
+        const index = userList.findIndex((x : any) => x.userID === user.uid);
+        
+        if (index === -1) {
+            userList.push({
+                userID: firstUser,
+                role: "Viewer",
+                isPending: true
+            });
+        
+            userIDList.push(firstUser);
+
+            groceryListState.addUser(groceryList.grocerylistID, {
+                userID: firstUser!,
+                role: "Viewer",
+                isPending: true
+            })
+        }
+        
+        
+        await updateDoc(document, {
+            users: userList,
+            usersID: userIDList
+        });
+        
+        const userRef = doc(collection(getFirestore(), "users"), user.uid);
+
+        const u = await getDoc(userRef);
+
+        setInviteEmail("");
+
+        const inviteDocument = collection(getFirestore(), "invites");
+
+        await addDoc(inviteDocument, {
+            user: firstUser,
+            inviter: user.uid,
+            inviterFirstName: u.get("firstName"),
+            role: 'Viewer',
+            listID: groceryList.grocerylistID,
+            listName: groceryList.name,
+            date: new Date(Date.now()).toISOString()
+        });
+    }
+
+    async function removeUser(id :string) {
+        if (!groceryList) {
+            return;
+        }
+
+        await groceryListState.saveGroceryList(groceryList.grocerylistID);
+
+        const user = getAuth().currentUser;
+        if (!user) {
+            return;
+        }
+
+
+        const groceryListRef = collection(getFirestore(), "grocerylist");
+        const document = doc(groceryListRef, groceryList.grocerylistID);
 
         const grocery = await getDoc(document);
         const users = grocery.get("users");
         const usersID = grocery.get("usersID");
 
-        const userList = users || [];
-        const userIDList = usersID || [];
+        let userList = users || [];
+        let userIDList = usersID || [];
 
-        const index = userList.findIndex((user: any) => user.userID === user.userID);
+        userList = userList.filter((x : any) => x.userID !== id);
+        userIDList = userIDList.filter((x: any) => x !== id);
 
-        if (index === -1) {
-            userList.push({
-                userID: firstUser,
-                role: "Viewer"
-            });
-
-            userIDList.push(firstUser);
-
-            groceryListState.addUser(groceryList.grocerylistID, {
-                userID: firstUser!,
-                role: "Viewer"
-            })
-        }
-
+        groceryListState.removeUser(groceryList.grocerylistID, id);
 
         await updateDoc(document, {
             users: userList,
-            userIDs: userIDList
+            usersID: userIDList
         });
 
         setInviteEmail("");
@@ -165,10 +229,10 @@ function ShareGroceryList({ groceryList, shareHandleRef }: ShareGroceryListProps
                 <View className="gap-1">
                     {
                         users.map((x, i) => <View key={i} className="flex-row justify-between">
-                                <View className="flex-row gap-3">
-                                    <View className="rounded-full p-3" 
+                                <View className="flex-row gap-3 items-center">
+                                    <View className="rounded-full w-10 h-10 justify-center items-center" 
                                     style={{backgroundColor: generateColorFromText(x.firstName + x.lastName)}}>
-                                        <Text className="font-bold">{x.firstName[0] + x.lastName[0]}</Text>
+                                        <Text className="font-bold">{x.firstName[0] + (x.lastName[0] ?? "")}</Text>
                                     </View>
 
                                     <View>
@@ -177,47 +241,106 @@ function ShareGroceryList({ groceryList, shareHandleRef }: ShareGroceryListProps
                                     </View>
                                 </View>
 
-                                <View className="flex-row gap-4">
-                                    <Text className="font-bold text-gray-500">{x.role}</Text>
-                                    <View>
-                                        <Lucide name="trash-2" size={20} color="#ef4444"/>
-                                    </View>
+                                <View className="flex-row gap-4 items-center">
+                                    {
+                                        x.toBeDeleted 
+                                            ? 
+                                            <>
+                                            <TouchableOpacity 
+                                                className="rounded-xl bg-green-600 px-3 py-2 justify-center"
+                                                onPress={async () => {
+                                                    await removeUser(x.userID);
+                                            }}>
+                                                <Text className="text-white font-bold">OK</Text>
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity 
+                                                className="rounded-xl border border-green-600 p-2 justify-center"
+                                                onPress={() => {
+                                                setUsers(users => users.map(y => y.userID === x.userID
+                                                    ? {...y, toBeDeleted: false }
+                                                    : y
+                                                ));
+                                            }}>
+                                                <Text className="font-bold">Cancel</Text>
+                                            </TouchableOpacity>
+                                            </>
+                                            :
+                                            <>
+                                            <Text className="font-bold text-gray-500">{x.isPending ? "Pending" : x.role}</Text>
+                                            {
+                                                role !== 'Viewer'
+                                                ? <TouchableOpacity onPress={() => {
+                                                    setUsers(users => users.map(y => y.userID === x.userID
+                                                        ? {...y, toBeDeleted: true }
+                                                        : y
+                                                    ));
+                                                }}>
+                                                    <Lucide name="trash-2" size={20} color="#ef4444"/>
+                                                </TouchableOpacity>
+                                                : null
+                                            }
+                                            </>
+                                    }
+
+
                                 </View>
                             </View>
                         )
                     }
                 </View>
 
-                <HorizontalSeparator gap={1}/>
 
-                <View>
-                    <Text className="font-bold">Add new member</Text>
-                </View>
+                {
+                    role !== 'Viewer'
+                    ?
+                    <>
+                    <HorizontalSeparator gap={1}/>
+                        <View>
+                            <Text className="font-bold">Add new member</Text>
+                        </View>
 
-                <View className="flex-row gap-2">
-                    <View className="flex-1 bg-white border border-slate-500 rounded-xl px-1">
-                        <TextInput 
-                            className="text-sm"
-                            value={inviteEmail}
-                            onChangeText={setInviteEmail}
-                            placeholder="Enter email address" />
+                        <View className="flex-row gap-2">
+                            <View className="flex-1 bg-white border border-slate-500 rounded-xl px-1">
+                                <TextInput 
+                                    className="text-sm"
+                                    value={inviteEmail}
+                                    onChangeText={setInviteEmail}
+                                    placeholder="Enter email address" />
+                            </View>
+
+                            <TouchableOpacity className="bg-green-700 justify-center items-center rounded-xl px-4" onPress={addUser}>
+                                <Text className="text-white font-bold">Add</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                    </>
+                    : null
+                }
+
+
+                {
+                    role !== 'Viewer' || groceryList?.inviteToken
+                    ?
+                    <>
+                        <HorizontalSeparator gap={1}/>
+                        <View>
+                            <Text className="font-bold">Share Link</Text>
+                        </View>
+                    </>
+                    : null
+                }
+
+
+                {
+                    role !== 'Viewer'
+                    ?<View className="flex-row gap-2 items-center">
+                        <Checkbox active={groceryList?.inviteToken ? true : false} onToggle={toggleSharing} size={20} />
+                        <Text className="text-sm">Show share link</Text>
                     </View>
+                    : null
+                }
 
-                    <TouchableOpacity className="bg-green-700 justify-center items-center rounded-xl px-4" onPress={addUser}>
-                        <Text className="text-white font-bold">Add</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <HorizontalSeparator gap={1}/>
-
-                <View>
-                    <Text className="font-bold">Share Link</Text>
-                </View>
-
-                <View className="flex-row gap-2 items-center">
-                    <Checkbox active={groceryList?.inviteToken ? true : false} onToggle={toggleSharing} size={20} />
-                    <Text className="text-sm">Show share link</Text>
-                </View>
 
                 {!groceryList?.inviteToken
                     ? null
@@ -245,7 +368,7 @@ function ShareGroceryList({ groceryList, shareHandleRef }: ShareGroceryListProps
                     )}
             </View>
 
-            <TouchableOpacity className="rounded-xl bg-green-600 p-3 w-full items-center" onPress={() => shareHandleRef.current?.closeDialog()}>
+            <TouchableOpacity className="rounded-xl bg-green-600 p-3 w-full items-center mt-2" onPress={() => shareHandleRef.current?.closeDialog()}>
                 <Text className="font-bold text-white">Done</Text>
             </TouchableOpacity></>
         )
@@ -254,25 +377,5 @@ function ShareGroceryList({ groceryList, shareHandleRef }: ShareGroceryListProps
 
 export default ShareGroceryList;
 
-function generateColorFromText(name: string) {
-    let hash = 0;
 
-    for (let i = 0; i < name.length; i += 1) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
 
-    const hue = Math.abs(hash % 360);
-
-    const saturation = 65 / 100;
-    const lightness = 55 / 100;
-
-    const alpha = saturation * Math.min(lightness, 1 - lightness);
-    const hslToRGB = (n: number) => {
-        const k = (n + hue / 30) % 12;
-        const color = lightness - alpha * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-
-        return Math.round(255 * color).toString(16).padStart(2, '0');
-    }
-
-    return `#${hslToRGB(8)}${hslToRGB(0)}${hslToRGB(4)}`;
-}

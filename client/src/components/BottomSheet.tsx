@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useImperativeHandle, useState } from "react";
-import { Dimensions, Keyboard, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
+import React, { useCallback, useImperativeHandle, useState } from "react";
+import { Dimensions, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";

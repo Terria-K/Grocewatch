@@ -1,6 +1,7 @@
+import './src/i18n/i18n';
 import "./src/global.css";
 
-import { Alert, Appearance, Linking, StatusBar, ToastAndroid, useColorScheme } from 'react-native';
+import { Appearance as Theming, Linking, StatusBar, ToastAndroid, useColorScheme } from 'react-native';
 import {
   SafeAreaProvider,
 } from 'react-native-safe-area-context';
@@ -15,7 +16,7 @@ import { MessageProvider } from "./src/context/messages";
 import { AIProvider } from "./src/context/ai";
 import Profiles from "./src/pages/Profiles/Profiles";
 import ManageGroceryList from "./src/pages/GroceryList/ManageGroceryList";
-import ProductPage, { ProductPopup } from "./src/pages/Products";
+import ProductPage from "./src/pages/Products";
 import type { RootStackParamList } from "./src/components/NavigationBar";
 import CreateGroceryList from "./src/pages/GroceryList/CreateGroceryList";
 import Notifications from "./src/pages/Notifications";
@@ -28,6 +29,12 @@ import EditProfile from "./src/pages/Profiles/EditProfile";
 import PrivacyAndSecurity from "./src/pages/Profiles/PrivacyAndSecurity";
 import ModelSettings from "./src/pages/AIChat/ModelSettings";
 import SharingConfirmScreen from "./src/pages/SharingConfirmScreen";
+import AddProduct from "./src/pages/AddProduct";
+import Appearance from "./src/pages/Profiles/Appearance";
+import AdminPage from './src/pages/Admin/AdminPage';
+import AdminProducts from './src/pages/Admin/AdminProducts';
+import AdminUser from './src/pages/Admin/AdminUser';
+import AdminProductsCreateOrView from './src/pages/Admin/AdminProductsCreateOrView';
 
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
@@ -71,7 +78,7 @@ function InviteHandler({ children }: { children: React.ReactNode}) {
 }
 
 function App() {
-    Appearance.setColorScheme("light");
+    Theming.setColorScheme("light");
     const isDarkMode = useColorScheme() === 'dark';
     const navigationRef = createNavigationContainerRef();
 
@@ -96,7 +103,7 @@ function App() {
                         <Stack.Screen name="ManageGroceryList" component={ManageGroceryList} options={{
                             animation: 'slide_from_bottom'
                         }}/>
-                        <Stack.Screen name="AddProduct" component={ProductPopup} options={{
+                        <Stack.Screen name="AddProduct" component={AddProduct} options={{
                             animation: 'slide_from_bottom'
                         }}/>
 
@@ -130,6 +137,26 @@ function App() {
 
                         <Stack.Screen name="SharingConfirmScreen" component={SharingConfirmScreen} options={{
                             animation: 'slide_from_bottom'
+                        }}/>
+
+                        <Stack.Screen name="Appearance" component={Appearance} options={{
+                            animation: 'slide_from_bottom'
+                        }}/>
+
+                        <Stack.Screen name="Admin" component={AdminPage} options={{
+                            animation: 'slide_from_bottom'
+                        }}/>
+
+                        <Stack.Screen name="AdminProduct" component={AdminProducts} options={{
+                            animation: 'slide_from_right'
+                        }}/>
+
+                        <Stack.Screen name="AdminUser" component={AdminUser} options={{
+                            animation: 'slide_from_right'
+                        }}/>
+
+                        <Stack.Screen name="AdminAddOrViewProduct" component={AdminProductsCreateOrView} options={{
+                            animation: 'slide_from_right'
                         }}/>
                     </Stack.Navigator>
 

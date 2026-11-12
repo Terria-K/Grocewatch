@@ -17,6 +17,9 @@ import CircularProgress from "../../components/CircularProgress";
 import GroceryListSettings from "./GroceryListSettings";
 import ShareGroceryList from "./ShareGroceryList";
 import { getAuth } from "@react-native-firebase/auth";
+import { useUser } from "../../context/user";
+import { ProductAddParam } from "../AddProduct";
+import { makeNameFirstCharacterUppercase } from "../../utils/utils";
 
 const { height: screenHeight} = Dimensions.get('screen');
 
@@ -43,10 +46,6 @@ function ProductCard({ products, product, onPress, onCheck, onRemove, role }: Pr
 
     const removeProduct = () => {
         onRemove(product);
-    }
-
-    function makeNameFirstCharacterUppercase(name: string) {
-        return name[0].toUpperCase() + name.substring(1)
     }
 
     return (
@@ -176,73 +175,76 @@ function GroceryListCard({ name, products, budget, calorie, onPress }: GroceryLi
     const spentPercentage = (1-((budget - productData.spent) / budget)) * 100;
     const caloriePercentage = (1-((calorie - productData.calorie) / calorie)) * 100;
 
-    return <TouchableNativeFeedback onPress={onPress}>
-            <View className="bg-gray-100 rounded-xl border-2 border-gray-400 p-4 px-6 shadow-sm shadow-black elevation-xl flex-row justify-between">
-                <View className="absolute right-10 bottom-7">
-                    {calorie == 0 
-                        ? null
-                        : <CircularProgress 
-                            percentage={Math.min(caloriePercentage, 100)} 
-                            duration={1000} color={caloriePercentage > 100 ? "#dc2626" : "#16a34a"}>
-                            <View>
-                                <Text className="text-sm text-center text-green-800 font-bold">{productData.calorie.toLocaleString('en-US')}</Text>
-                                <Text className="text-xs text-center text-green-700">/ {calorie.toLocaleString('en-US')} kcal</Text>
-                            </View>
-                        </CircularProgress>
-                    }
+    return <TouchableOpacity
+            onPress={onPress}
+            style={{
+                borderColor: productData.spent > budget ? "#dc2626" : "#16a34a"
+            }}
+            className="bg-white rounded-3xl border-2 p-4 px-6 shadow-sm shadow-black elevation-xl flex-row justify-between">
+            <View className="absolute right-10 bottom-7">
+                {calorie == 0 
+                    ? null
+                    : <CircularProgress 
+                        percentage={Math.min(caloriePercentage, 100)} 
+                        duration={1000} color={caloriePercentage > 100 ? "#dc2626" : "#16a34a"}>
+                        <View>
+                            <Text className="text-sm text-center text-green-800 font-bold">{productData.calorie.toLocaleString('en-US')}</Text>
+                            <Text className="text-xs text-center text-green-700">/ {calorie.toLocaleString('en-US')} kcal</Text>
+                        </View>
+                    </CircularProgress>
+                }
+
+            </View>
+
+            <View className="flex-1 gap-4">
+                <View>
+                    <Text className="font-bold text-xl">{name}</Text>
+                    <Text className="color-gray-400">{products.length} items</Text>
 
                 </View>
 
-                <View className="flex-1 gap-4">
-                    <View>
-                        <Text className="font-bold text-xl">{name}</Text>
-                        <Text className="color-gray-400">{products.length} items</Text>
+                <View className="flex-row">
+                    <View className="gap-1" style={{opacity: budget === 0 ? 0 : 1}}>
+                        <View className="flex-row max-w-96 gap-1">
+                            <View className="flex-row gap-1">
+                                <Text className="color-gray-400 text-xs">Budget:</Text> 
+                                <Text className="font-semibold color-green-600 text-xs">₱{budget.toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })}</Text>
+                            </View>
 
-                    </View>
-
-                    <View className="flex-row">
-                        <View className="gap-1" style={{opacity: budget === 0 ? 0 : 1}}>
-                            <View className="flex-row max-w-96 gap-1">
-                                <View className="flex-row gap-1">
-                                    <Text className="color-gray-400 text-xs">Budget:</Text> 
-                                    <Text className="font-semibold color-green-600 text-xs">₱{budget.toLocaleString('en-US', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    })}</Text>
-                                </View>
-
-                                <View className="flex-row gap-1">
-                                    <Text className="color-gray-400 text-xs">Spent:</Text> 
-                                    <Text className="color-red-600 font-semibold text-xs">₱{productData.spent.toLocaleString('en-US', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    })}</Text>
-                                </View>
+                            <View className="flex-row gap-1">
+                                <Text className="color-gray-400 text-xs">Spent:</Text> 
+                                <Text className="color-red-600 font-semibold text-xs">₱{productData.spent.toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })}</Text>
                             </View>
                         </View>
                     </View>
-
-                    <View className="h-2 bg-gray-300 w-full rounded">
-                        <Animated.View className="h-2 rounded" style={{
-                            backgroundColor: productData.spent > budget ? "#dc2626" : "#16a34a",
-                            width: `${Math.min(spentPercentage, 100)}%`,
-                        }} layout={LinearTransition.springify().damping(100).stiffness(0)}/>
-                    </View>
-
                 </View>
 
-
-                <View className="left-4 flex-col justify-between items-end">
-                        <TouchableOpacity className="h-[30px] w-[30px] items-end" onPress={onPress}>
-                            <Lucide name="menu" size={16}/>
-                        </TouchableOpacity>
-
-                    <Text className="top-4 text-sm font-bold" style={{
-                        opacity: budget === 0 ? 0 : 1
-                    }}>{!Number.isNaN(spentPercentage) ? spentPercentage.toFixed(0) : 0}%</Text>
+                <View className="h-2 bg-gray-300 w-full rounded">
+                    <Animated.View className="h-2 rounded" style={{
+                        backgroundColor: productData.spent > budget ? "#dc2626" : "#16a34a",
+                        width: `${Math.min(spentPercentage, 100)}%`,
+                    }} layout={LinearTransition.springify().damping(100).stiffness(0)}/>
                 </View>
+
             </View>
-        </TouchableNativeFeedback>
+
+
+            <View className="left-4 flex-col justify-between items-end">
+                    <TouchableOpacity className="h-[30px] w-[30px] items-end" onPress={onPress}>
+                        <Lucide name="menu" size={16}/>
+                    </TouchableOpacity>
+
+                <Text className="top-3 text-sm font-bold" style={{
+                    opacity: budget === 0 ? 0 : 1
+                }}>{!Number.isNaN(spentPercentage) ? Math.min(spentPercentage, 100).toFixed(0) : 0}%</Text>
+            </View>
+        </TouchableOpacity>
 }
 
 type ManageGroceryListProps = NativeStackScreenProps<RootStackParamList, 'ManageGroceryList'>;
@@ -270,7 +272,7 @@ function ManageGroceryList({ route }: ManageGroceryListProps) {
 
     const addButton = () => {
         if (groceryList) {
-            navigation.navigate("AddProduct", { groceryListID: groceryList.grocerylistID })
+            navigation.navigate("AddProduct", { addCallback: onProductAdd })
         }
     }
 
@@ -291,6 +293,23 @@ function ManageGroceryList({ route }: ManageGroceryListProps) {
         setSelectedProduct(product);
 
         handleRef.current?.openDialog();
+    }
+
+    const user = useUser();
+
+    async function onProductAdd(products: ProductAddParam[]) {
+        for (let product of products) {
+            if (groceryListID) {
+                groceryListState.addProduct(groceryListID, product.productID, product.quantity);
+                user.increasedProductTracked();
+            }
+        }
+
+        if (groceryListID) {
+            await groceryListState.saveGroceryList(groceryListID);
+        }
+
+        await user.save();
     }
 
     const onProductRemove = async () => {
@@ -364,14 +383,12 @@ function ManageGroceryList({ route }: ManageGroceryListProps) {
                 return x.role;
             }
 
-            return 'Viewer';
+            return undefined;
         }).at(0);
 
         if (!role) {
             return;
         }
-
-        console.log(role);
 
         setRole(role);
     }, []);
@@ -459,7 +476,6 @@ function ManageGroceryList({ route }: ManageGroceryListProps) {
             <Text className="font-bold text-2xl">Manage Grocery List</Text>
         </View>
 
-
         <GroceryListCard 
             name={groceryList?.name ?? ""} 
             budget={groceryList?.budgetLimit ?? 0} 
@@ -474,28 +490,31 @@ function ManageGroceryList({ route }: ManageGroceryListProps) {
 
                 <View className="flex-row items-center gap-2 justify-center">
                     <SearchBar placeholder="Search Products..." onInput={setSearchText}/>
-
-                    {
-                        role !== 'Viewer'
-                        ?<TouchableOpacity 
-                            className="rounded-lg bg-green-700 border-green-700 border-2 border-solid shadow-sm shadow-black elevation-2xl p-2 flex-row items-center"
-                            onPress={addButton}>
-                                <MaterialDesignIcons name="plus" size={20} color="#FFFFFF"/>
-                                <Text className="text-white font-bold">Add</Text>
-                            </TouchableOpacity>
-                        : null
-                    }
-
                 </View>
             </View>
 
-            <Animated.ScrollView entering={FadeIn} exiting={FadeOut} className="rounded-xl border flex-1 gap-8" showsVerticalScrollIndicator={false}>
-            <View>
-                {sortedCheckedProducts.map(
-                    (item) => <ProductCard role={role} onRemove={onRemove} onPress={onView} products={products} product={item} key={item.productID.toString()} onCheck={onChecked}/>)}
+            <View className="flex-1 gap-4">
+                <Animated.ScrollView entering={FadeIn} exiting={FadeOut} className="rounded-xl border flex-1 gap-8" showsVerticalScrollIndicator={false}>
+                    <View>
+                        {sortedCheckedProducts.map(
+                            (item) => <ProductCard role={role} onRemove={onRemove} onPress={onView} products={products} product={item} key={item.productID.toString()} onCheck={onChecked}/>)}
+                    </View>
+
+                </Animated.ScrollView>
+
+                {
+                    role !== 'Viewer'
+                    ?
+                    <TouchableOpacity className="p-4 flex-row justify-center items-center bg-green-300 rounded-xl mx-4" onPress={addButton}>
+                        <MaterialDesignIcons name="plus" size={20} color="#15803d"/>
+                        <Text className="font-bold text-green-700">Add Product</Text>
+                    </TouchableOpacity>
+                    : null
+                }
+
             </View>
 
-            </Animated.ScrollView>
+
         </View>
     </View>
 
@@ -534,7 +553,7 @@ function ManageGroceryList({ route }: ManageGroceryListProps) {
         </BottomSheet>       
 
         <Confirmation ref={shareHandleRef} padding={10}>
-            <ShareGroceryList shareHandleRef={shareHandleRef} groceryList={groceryList}/>
+            <ShareGroceryList shareHandleRef={shareHandleRef} groceryList={groceryList} role={role}/>
         </Confirmation>
 
         <Confirmation ref={handleRef} padding={30}>

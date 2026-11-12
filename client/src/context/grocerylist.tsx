@@ -1,5 +1,5 @@
 import { getAuth } from "@react-native-firebase/auth";
-import { collection, deleteDoc, doc, getDocs, getFirestore, or, query, setDoc, where } from "@react-native-firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, or, query, setDoc, updateDoc, where } from "@react-native-firebase/firestore";
 import RNFS from "react-native-fs";
 import { ulid } from "react-native-ulid-jsi";
 import { create } from "zustand";
@@ -9,6 +9,7 @@ export type UserRole = 'Admin' | 'Editor' | 'Viewer';
 
 export type GroceryListState = {
     groceryList: GroceryList[],
+    explicitRefresh: boolean,
     set: (list: GroceryList[]) => void;
     add: (list: GroceryList) => void;
 
@@ -22,8 +23,10 @@ export type GroceryListState = {
     toggleCheckProduct: (groceryListID: string, productID: string) => void;
 
     addUser: (groceryListID: string, user: GroceryUser) => void;
+    removeUser: (groceryListID: string, userID: string) => void;
 
     remove: (groceryListID: string) => void;
+    leave: (groceryListID: string) => void;
     saveGroceryList: (groceryListID: string) => Promise<void>;
 }
 
@@ -50,16 +53,18 @@ export type GroceryList = {
 
 type GroceryUser = {
     userID: string,
-    role: UserRole
+    role: UserRole,
+    isPending: boolean
 }
 
 export const useGroceryList = create<GroceryListState>((set, get) => {
     return {
         groceryList: [],
+        explicitRefresh: false,
         set: (list) => set({ groceryList: list}),
         add: (list) => set((state) => {
             return {
-                groceryList: [...state.groceryList, list]
+                groceryList: [list, ...state.groceryList]
             }
         }),
 
@@ -67,6 +72,14 @@ export const useGroceryList = create<GroceryListState>((set, get) => {
             groceryList: state.groceryList.map((item) => {
                 return item.grocerylistID === grocerylistID
                     ? {...item, users: [...item.users ?? [], user]}
+                    : item
+            })
+        })),
+
+        removeUser: (grocerylistID, userID) => set((state) => ({
+            groceryList: state.groceryList.map((item) => {
+                return item.grocerylistID === grocerylistID
+                    ? {...item, users: item.users?.filter(x => x.userID !== userID)}
                     : item
             })
         })),
@@ -178,6 +191,38 @@ export const useGroceryList = create<GroceryListState>((set, get) => {
                 groceryList: state.groceryList.filter(item => item.grocerylistID !== id)
             }
         }),
+        leave: (id) => set((state) => {
+            const auth = getAuth();
+
+            const user = auth.currentUser;
+
+            if (user) {
+                const groceryList = state.groceryList.filter(item => item.grocerylistID === id).at(0)!;
+
+                const groceryListRef = collection(getFirestore(), 'grocerylist');
+                const document = doc(groceryListRef, groceryList.grocerylistID);
+
+                getDoc(document).then(grocery => {
+                    const users = grocery.get("users");
+                    const usersID = grocery.get("usersID");
+
+                    let userList = users || [];
+                    let userIDList = usersID || [];
+
+                    userList = userList.filter((x: any) => x.userID !== user.uid);
+                    userIDList = userIDList.filter((x: any) => x !== user.uid);
+
+                    updateDoc(document, {
+                        users: userList,
+                        usersID: userIDList
+                    }).catch(console.error);
+                });
+            }
+
+            return {
+                groceryList: state.groceryList.filter(item => item.grocerylistID !== id)
+            }
+        }),
         saveGroceryList: async (groceryListID) => {
             const path = `${RNFS.DocumentDirectoryPath}/grocerylist.json`;
             const state = get();
@@ -201,6 +246,11 @@ export const useGroceryList = create<GroceryListState>((set, get) => {
 
             const document = doc(collection(firestore, "grocerylist"), grocerylist.grocerylistID);
 
+            const realDoc = await getDoc(document);
+
+            const actualUser = realDoc.get("user");
+
+
             await setDoc(document, {
                 name: grocerylist.name,
                 products: grocerylist.products,
@@ -209,8 +259,9 @@ export const useGroceryList = create<GroceryListState>((set, get) => {
                 inviteToken: grocerylist.inviteToken ?? null,
                 defaultInviteRole: grocerylist.defaultInviteRole,
                 users: grocerylist.users,
+                usersID: (grocerylist as any).usersID ?? [],
                 modifiedAt: grocerylist.modifiedAt,
-                user: user.uid
+                user: actualUser ?? user.uid
             })
         }
     }
@@ -219,7 +270,7 @@ export const useGroceryList = create<GroceryListState>((set, get) => {
 export async function fetchGroceryList(): Promise<GroceryList[]> {
     const path = `${RNFS.DocumentDirectoryPath}/grocerylist.json`;
 
-    let currentGrocery: any;
+    let currentGrocery: any[] = [];
 
     if (await RNFS.exists(path)) {
         const json = await RNFS.readFile(path, 'utf8')
@@ -252,14 +303,27 @@ export async function fetchGroceryList(): Promise<GroceryList[]> {
                 return;
             }
 
+            const isShared = Array.isArray(data.usersID) && data.usersID.includes(user.uid);
+            const isPending = data.users.filter((x: any) => x.userID === user.uid).at(0)?.isPending ?? false;
+
+            console.log(isPending);
+
+            if (isPending) {
+                return;
+            }
+
             const groceryItem = {
                 ...data,
                 grocerylistID: doc.id,
-                isShared: Array.isArray(data.users)
+                isShared: isShared
             }
 
-            if (!currentGrocery.some((x: any) => x.grocerylistID === doc.id)) {
+            const index = currentGrocery.findIndex((x: any) => x.grocerylistID === doc.id)
+
+            if (index === -1) {
                 currentGrocery.push(groceryItem);
+            } else {
+                currentGrocery[index] = groceryItem;
             }
         });
 

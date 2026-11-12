@@ -14,6 +14,10 @@ import LeafIcon from "../../assets/fluent_leaf_icon.svg";
 import { collection, doc, getDoc, getFirestore, onSnapshot } from "@react-native-firebase/firestore";
 import ChipAI from "../../assets/chip-ai.svg";
 import Confirmation, { ConfirmationHandle } from "../../components/Confirmation";
+import { useGroceryList } from "../../context/grocerylist";
+import { generateColorFromText } from "../../utils/utils";
+import { GoogleOneTapSignIn } from "react-native-nitro-google-signin";
+import { useTranslation } from "react-i18next";
 
 type ProfileButtonProps = {
     title: string,
@@ -47,14 +51,19 @@ function Profiles() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const confirmationRef = useRef<ConfirmationHandle>(null);
     const user = useUser();
+    const groceryListState = useGroceryList();
     const insets = useSafeAreaInsets();
 
     const bottomPadding = 75 + (insets.bottom > 0 ? insets.bottom : 16);
-    const [loading, setLoading] = useState(true);
+    const [statsLoading, setStatsLoading] = useState(true);
+    const [userLoading, setUserLoading] = useState(true);
 
     const [actualUser, setActualUser] = useState<User | null>();
-    const [name, setName] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
+    const [isAdmin, setAdmin] = useState(false);
 
     useEffect(() => {
         fetchUser().then((data) => {
@@ -62,7 +71,7 @@ function Profiles() {
                 user.set(data.listCreated, data.productsTracked);
             }
 
-            setLoading(false)
+            setStatsLoading(false)
         })
     }, [])
 
@@ -74,9 +83,13 @@ function Profiles() {
                 const userDoc = await getDoc(doc(collection(getFirestore(), "users"), user.uid));
                 const firstName = userDoc.get("firstName");
                 const lastName = userDoc.get("lastName");
-                setName(firstName + " " + lastName);
+                setFirstName(firstName);
+                setLastName(lastName);
 
                 setEmail(userDoc.get("emailAddress"));
+                setImageUrl(userDoc.get("imageUrl") ?? '');
+                setAdmin(userDoc.get("isAdmin") ?? false);
+                setUserLoading(false);
             }
         });
 
@@ -92,7 +105,8 @@ function Profiles() {
             if (snapshot && snapshot.exists()) {
                 const firstName = snapshot.get("firstName");
                 const lastName = snapshot.get("lastName");
-                setName(firstName + " " + lastName);
+                setFirstName(firstName);
+                setLastName(lastName);
                 setEmail(snapshot.get("emailAddress"));
             }
         });
@@ -102,28 +116,51 @@ function Profiles() {
 
     async function logOut() {
         await signOut(getAuth());
+
+        if (GoogleOneTapSignIn.getCurrentUser()) {
+            await GoogleOneTapSignIn.signOut();
+        }
+
         confirmationRef.current?.closeDialog()
         setActualUser(null);
+        useGroceryList.setState({ groceryList: []});
+        await groceryListState.saveGroceryList(null!);
     }
+
+    const { t } = useTranslation();
 
     return <>
             <View style={{flex: 1, paddingBottom: bottomPadding}}>
-                <ScrollView contentContainerClassName="gap-4" className="bg-white" showsVerticalScrollIndicator={false}>
+                <ScrollView 
+                contentContainerClassName="gap-4" 
+                style={{backgroundImage: 'linear-gradient(0deg, #FFFFFF, #F5FAF2, #D7EBD5, #A8CFA8)'}}  
+                showsVerticalScrollIndicator={false}>
                     <View className="p-2 pt-20" style={{ backgroundColor: "#E3FFE2"}}>
                         {actualUser ? <View className="px-8 py-6 gap-2">
                                 <View className="flex-row gap-3 items-center">
-                                    <View className="flex-2">
-                                        <FontAwesome5 name="user-circle" iconStyle="solid" size={80}/>
-                                    </View>
-                                    <View className="flex-3">
-                                        <Text className="font-bold text-xl">{name}</Text>
-                                        <Text className="text-lg">{email}</Text>
+                                    {
+                                        userLoading ? <ActivityIndicator size="large"/>
+                                        :
+                                        <>
+                                            <View className="flex-2">
+                                                <View className="rounded-full p-3 w-20 h-20 justify-center items-center" 
+                                                style={
+                                                    imageUrl === '' ? {backgroundColor: generateColorFromText(firstName + lastName)} : null}>
+                                                    {
+                                                        imageUrl === ''
+                                                            ? <Text className="font-bold text-3xl">{firstName[0] + (lastName[0] ?? "")}</Text>
+                                                            : <Image className="w-20 h-20 rounded-full" source={{ uri: imageUrl }}/>
+                                                    }
+                                                    
+                                                </View>
+                                            </View>
+                                            <View className="flex-3">
+                                                <Text className="font-bold text-xl">{firstName + " " + lastName}</Text>
+                                                <Text className="text-lg">{email}</Text>
+                                            </View>
+                                        </>
+                                    }
 
-                                        <View className="flex-row items-center rounded-full gap-2 py-2 justify-center" style={{ backgroundColor: "#3FFD355E"}}>
-                                            <MaterialDesignIcons name="leaf" size={20} color="#077E01"/>
-                                            <Text style={{color: "#077E01"}} className="font-bold">Grocery Planner</Text>
-                                        </View>
-                                    </View>
                                 </View>
                             </View>
                             : 
@@ -173,7 +210,7 @@ function Profiles() {
                             <View className="mx-10 p-6 flex-row justify-between rounded-xl" style={{ backgroundColor: "#CCFFCA"}}>
                                 <View className="flex-1 items-center">
                                     <MaterialDesignIcons name="list-box-outline" size={28}/>
-                                    <Text className="font-bold text-lg">{loading ? <ActivityIndicator size="small" color="#000000" /> : user.listCreated}</Text>
+                                    <Text className="font-bold text-lg">{statsLoading ? <ActivityIndicator size="small" color="#000000" /> : user.listCreated}</Text>
                                     <Text className="text-gray-600">List Created</Text>
                                 </View>
 
@@ -181,7 +218,7 @@ function Profiles() {
 
                                 <View className="flex-2 items-center">
                                     <Lucide name="shopping-cart" size={28}/>
-                                    <Text className="font-bold text-lg">{loading ? <ActivityIndicator size="small" color="#000000" /> : user.productsTracked}</Text>
+                                    <Text className="font-bold text-lg">{statsLoading ? <ActivityIndicator size="small" color="#000000" /> : user.productsTracked}</Text>
                                     <Text className="text-gray-600">Products Tracked</Text>
                                 </View>
                             </View>
@@ -214,7 +251,9 @@ function Profiles() {
 
 
 
-                        <ProfileButton title="Appearance" description="Customize your app theme">
+                        <ProfileButton title="Appearance" description="Customize your app theme" onPress={
+                            () => navigation.navigate("Appearance")
+                        }>
                             <MaterialDesignIcons name="palette" size={24}/>
                         </ProfileButton>
 
@@ -230,6 +269,15 @@ function Profiles() {
                         <ProfileButton title="About Grocewatch" description="Learn more about our app">
                             <MaterialDesignIcons name="information" size={24}/>
                         </ProfileButton>
+
+                        {
+                            isAdmin 
+                                ?<ProfileButton title="Admin Panel" description="Add and modify products" onPress={() => navigation.navigate("Admin")}>
+                                    <MaterialDesignIcons name="information" size={24}/>
+                                </ProfileButton>
+                                : null
+                        }
+
                     </View>
 
                     {actualUser
@@ -238,7 +286,7 @@ function Profiles() {
                                 onPress={() => confirmationRef.current?.openDialog()}>
                                 <View className="items-center flex-row gap-2">
                                     <MaterialDesignIcons name="logout" size={20}/>
-                                    <Text className="font-bold">Log Out</Text>
+                                    <Text className="font-bold">{t("LOGOUT")}</Text>
                                 </View>
 
                                 <View>
@@ -253,7 +301,7 @@ function Profiles() {
             </View>
 
             <NavigationBar currentRoute="Profile"/>
-            <Confirmation ref={confirmationRef} size={30}>
+            <Confirmation ref={confirmationRef} padding={30}>
                 <Text className="font-bold text-lg">Log Out?</Text>
                 <View className="w-full">
                     <Text className="text-sm">Logging out will lose you access to some features to Grocewatch, are you sure?</Text>
@@ -261,12 +309,12 @@ function Profiles() {
 
                 <View className="w-full gap-4">
                     <TouchableOpacity className="rounded-xl border-green-600 border-2 p-4 w-full items-center" onPress={logOut}>
-                        <Text className="font-bold">Log Out</Text> 
+                        <Text className="font-bold">{t("LOGOUT")}</Text> 
                     </TouchableOpacity>
 
                     <TouchableOpacity className="rounded-xl border-green-600 bg-green-600 border-2 p-4 w-full items-center" onPress={
                         () => confirmationRef.current?.closeDialog()}>
-                        <Text className="text-white font-bold">Close</Text> 
+                        <Text className="text-white font-bold">{t("CLOSE")}</Text> 
                     </TouchableOpacity>
                 </View>
             </Confirmation>

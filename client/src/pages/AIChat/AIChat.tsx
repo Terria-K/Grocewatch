@@ -1,7 +1,8 @@
-import { Animated, Keyboard, ScrollView, ScrollViewInstance, StyleSheet, Text, TextInput, ToastAndroid, TouchableOpacity, View } from "react-native";
+import { Animated as SimpleMated, Keyboard, ScrollView, ScrollViewInstance, StyleSheet, Text, TextInput, ToastAndroid, TouchableOpacity, View } from "react-native";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import Lucide from "@react-native-vector-icons/lucide";
 import FontAwesome5 from "@react-native-vector-icons/fontawesome5";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import NavigationBar, { RootStackParamList } from "../../components/NavigationBar";
 import { useMessage } from "../../context/messages";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,168 +10,90 @@ import { ReactComponentRegistry, ReactComponentRegistryProvider } from "react-na
 import { ChatMessage, LoadingChatMessage, ThinkingChatMessage } from "./ChatMessage";
 import TemplateBox from "./TemplateBox";
 import { getAllGroceryList, getProducts, useAIChat } from "../../context/ai";
-import { OnCartProduct, useGroceryList } from "../../context/grocerylist";
-import { useProducts } from "../../context/products";
 import { ulid } from "react-native-ulid-jsi";
-import HorizontalSeparator from "../../components/HorizontalSeparator";
-import { useUser } from "../../context/user";
 import { Content, EnhancedGenerateContentResponse, GenerateContentStreamResult } from "@react-native-firebase/ai";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import ChatCreateGroceryList, { ChatCreateGroceryListProps, ProductSuggestion, ProductSuggestionProps } from "./Actions/ChatCreateGroceryList";
+import UpdateProducts, { UpdateProductsProps } from "./Actions/UpdateProducts";
+import React from "react";
+import { useTranslation } from "react-i18next";
 
-
-type ProductSuggestionProps = {
-    id: string,
-    quantity: number
-}
-
-function ProductSuggestion({ id , quantity }: ProductSuggestionProps) {
-    const { products } = useProducts()
-
-    const product = products.filter(x => x.productID === id).at(0)
-    if (!product) {
-        return (
-            <View className="justify-center items-center">
-                <Text>Product not found</Text>
-            </View>
-        )
-    }
-
-    return (
-        <View className="flex-row justify-between items-center">
-            <View>
-                <Text className="font-bold">{product.name}</Text>
-                <Text>{quantity} pc</Text>
-            </View>
-            <View>
-                {product.price 
-                    ? <Text className="font-bold">₱{(product.price * quantity).toFixed(2)}</Text> 
-                    : <Text>Not Available</Text>}
-                
-            </View>
-        </View>
-    )
-}
-
-
-type ChatCreateGroceryListProps = {
-    action_id: string,
-    name: string,
-    products?: string,
-    budget: number,
-    calorieLimit: number
-}
-
-function ChatCreateGroceryList({ action_id, name, products, budget, calorieLimit }: ChatCreateGroceryListProps) {
-    const [saved, setSaved] = useState(false)
-
-    let rProduct: OnCartProduct[] | undefined = undefined
-    if (products) {
-        try {
-            rProduct = JSON.parse(products.replaceAll("'", "\"")) as OnCartProduct[]
-
-            // fix productID
-            rProduct = rProduct?.map(x => {
-                return {
-                    ...x,
-                    productID: x.productID,
-                    quantity: x.quantity ?? 1,
-                    onCartID: ulid()
-                }
-            })
-        }
-        catch (error){
-            console.log(error)
-        }
-    }
-
-    const groceryList = useGroceryList();
-    const user = useUser();
-
-    const save = async () => {
-        const lid = ulid();
-        
-        groceryList.add({
-            grocerylistID: lid,
-            name: name,
-            budgetLimit: budget,
-            calorieLimit: calorieLimit,
-            createdAt: new Date(Date.now()),
-            modifiedAt: new Date(Date.now()),
-            products: rProduct ?? [],
-            defaultInviteRole: 'Viewer',
-            inviteToken: null,
-            users: []
-        })
-
-        user.increasedProductTrackedBy(rProduct?.length ?? 0);
-
-        user.increaseListCreated();
-
-        await groceryList.saveGroceryList(lid);
-        await user.save();
-
-        setSaved(true)
-    }
-
-    return (
-        <View className="gap-2">
-            <Text className="font-bold text-xl">{name + "                                           "}</Text>
-
-            <View className="bg-white p-4 rounded-xl">
-            {
-                rProduct && rProduct instanceof Array ? (
-                    rProduct.map((x, i) => 
-                        (<Fragment key={i}>
-                             <ProductSuggestion id={x.productID} quantity={x.quantity}/>
-                             <HorizontalSeparator gap={10}/>
-                         </Fragment>)
-                    )
-                ) : null 
-            }
-
-            {
-                saved ?
-                <View className="flex-2 flex-row gap-2">
-                    <View className="flex-1 w-full py-2 items-center">
-                        <Text className="text-green-700 font-bold">Thank You!</Text>
-                    </View>
-                </View>
-                    :
-                <View className="flex-2 flex-row gap-2">
-                    <TouchableOpacity className="flex-1 bg-green-600 text-green-600 w-full py-2 rounded-lg items-center" onPress={save}>
-                        <Text className="text-white font-bold">Save List</Text>
-                    </TouchableOpacity>
-                </View>
-            }
-
-            </View>
-        </View>
-    )
-}
-
-                    //<TouchableOpacity className="flex-1 border-green-600 border border-solid w-full py-2 rounded-lg items-center">
-                    //    <Text className="text-green-700 font-bold">Edit List</Text>
-                    //</TouchableOpacity>
 
 const components: ReactComponentRegistry = {
-    CreateGroceryList: ({ props }) => {
+    ProductSuggestion: ({ props }) => {
         try {
-            const { name, products, action_id, budget, calorieLimit } = props as unknown as ChatCreateGroceryListProps;
+             const { id, quantity } = props as unknown as ProductSuggestionProps;
+
+             return <ProductSuggestion id={id} quantity={quantity}/>
+        } catch {
+            return <Text style={{ color: '#ff0000' }}>Error while creating products.</Text>
+        }
+    },
+    CreateGroceryList: ({ props, children }) => {
+        try {
+            const { name, action_id, budget, calorieLimit } = props as unknown as ChatCreateGroceryListProps;
             if (!name || name === '') {
                 return <Text style={{ color: '#ff0000' }}>Cannot do an action</Text>
             }
 
+            const trueChild = React.Children.map(children, (child) => {
+                if (typeof child === "string") {
+                    const split = child.split("\n");
+                    return split.map(x => {
+                        try {
+                            const json = JSON.parse(x)
+                            return <ProductSuggestion id={json.id} quantity={json.quantity}/>
+                        } catch {
+                            return <Text>{x}</Text>
+                        }
+                    });
+                } 
+                return <></>
+            })
+
             return (
-                <ChatCreateGroceryList action_id={action_id} name={name} products={products} budget={+budget} calorieLimit={+calorieLimit}/>
+                <ChatCreateGroceryList action_id={action_id} name={name} budget={+budget} calorieLimit={+calorieLimit}>
+                    {trueChild}
+                </ChatCreateGroceryList>
 
             )
         }
         catch 
         {
-            <Text style={{ color: '#ff0000' }}>Cannot do an action</Text>
+            return <Text style={{ color: '#ff0000' }}>Error while creating create grocery list action</Text>
         }
-    }
+    },
+    UpdateProducts: ({ props, children }) => {
+        try {
+            const { name, action_id, budget, calorieLimit } = props as unknown as UpdateProductsProps;
+            if (!name || name === '') {
+                return <Text style={{ color: '#ff0000' }}>Cannot do an action</Text>
+            }
+
+            const trueChild = React.Children.map(children, (child) => {
+                if (typeof child === "string") {
+                    const split = child.split("\n");
+                    return split.map(x => {
+                        try {
+                            const json = JSON.parse(x)
+                            return <ProductSuggestion id={json.id} quantity={json.quantity}/>
+                        } catch {
+                            return <Text>{x}</Text>
+                        }
+                    });
+                } 
+                return <></>
+            })
+
+            return <UpdateProducts action_id={action_id} name={name} budget={+budget} calorieLimit={+calorieLimit}>
+                {trueChild}
+            </UpdateProducts>
+        }
+        catch {
+            return <Text style={{ color: '#ff0000' }}>Error while creating update products action</Text>
+        }
+    },
 }
 
 let conversationHistory: Content[] = [];
@@ -354,6 +277,7 @@ function ChatScreen() {
                 }
             }
 
+            console.log(cleanMessage);
             messages.push({ message: cleanMessage, role: 'assistant'})
         }
         catch (err) {
@@ -371,23 +295,52 @@ function ChatScreen() {
         setThought(false);
     }
 
+    const { t } = useTranslation();
+
     return (
         <>
             {
-                messages.length == 0 ? (
-                     <View className="gap-4 flex-1 justify-end">
-                        <TemplateBox title="Plan your Groceries" description="Get suggestions based on your needs" icon="calendar-check"/>
-                        <TemplateBox title="Analyze Your List" description="Check if your list is balanced and complete." icon="lightbulb"/>
-                        <TemplateBox title="Suggest Budget-Friendly List" description="Tips to stay within your budget." icon="calculator"/>
-                        <TemplateBox title="Grocery List" description="Organize your groceries with ease." icon="shopping-bag"/>
-                    </View>               
+                messages.length == 0 && message.length == 0 ? (
+                     <Animated.View className="gap-4 flex-1 justify-end" exiting={FadeOut.duration(300)} entering={FadeIn.duration(100)}>
+                        <TemplateBox 
+                            title={t("PLAN_YOUR_GROCERIES.title")}
+                            description={t("PLAN_YOUR_GROCERIES.description")}
+                            icon="calendar-check"
+                            template={t("PLAN_YOUR_GROCERIES.result")}
+                            onPress={setMessage} 
+                        />
+
+                        <TemplateBox 
+                            title={t("ANALYZE_YOUR_LIST.title")}
+                            description={t("ANALYZE_YOUR_LIST.description")}
+                            icon="lightbulb"
+                            template={t("ANALYZE_YOUR_LIST.result")}
+                            onPress={setMessage} 
+                        />
+
+                        <TemplateBox 
+                            title={t("SUGGEST_BUDGET_FRIENDLY_LIST.title")}
+                            description={t("SUGGEST_BUDGET_FRIENDLY_LIST.description")} 
+                            icon="calculator"
+                            template={t("SUGGEST_BUDGET_FRIENDLY_LIST.result")}
+                            onPress={setMessage} 
+                        />
+
+                        <TemplateBox 
+                            title={t("ORGANIZE_GROCERY_LIST.title")}
+                            description={t("ORGANIZE_GROCERY_LIST.description")}
+                            icon="shopping-bag"
+                            template={t("ORGANIZE_GROCERY_LIST.result")}
+                            onPress={setMessage} 
+                        />
+                    </Animated.View> 
                 ) : null
             }
 
             {
                 messages.length != 0 ?
                 <ReactComponentRegistryProvider components={components}>
-                    <ScrollView contentContainerClassName="gap-4 justify-end flex-grow" ref={scrollViewRef!} showsHorizontalScrollIndicator={false}
+                    <ScrollView contentContainerClassName="gap-4 justify-end flex-grow" ref={scrollViewRef!} showsVerticalScrollIndicator={false}
                         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
                     {messages.map((x, i) => {
                             return <ChatMessage key={i} message={x.message} role={x.role}/>
@@ -424,7 +377,7 @@ function ChatScreen() {
                             value={message}
                             readOnly={loading}
                             className="font-bold flex-1"
-                            placeholder="Type a message..."/>
+                            placeholder={t("TYPE_A_MESSAGE") + "..."}/>
 
                         <TouchableOpacity className="bg-green-200 p-3 rounded-xl flex-2" onPress={handleSubmit}>
                             {
@@ -443,7 +396,7 @@ function ChatScreen() {
 
 function AIChat() {
     const insets = useSafeAreaInsets();
-    const chatHeight = useRef(new Animated.Value(0)).current;
+    const chatHeight = useRef(new SimpleMated.Value(0)).current;
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     const bottomPadding = 90 + (insets.bottom > 0 ? insets.bottom : 16) + 16;
@@ -466,7 +419,7 @@ function AIChat() {
     }, []);
 
     const trigger = (reverse: boolean) => {
-        Animated.timing(chatHeight, {
+        SimpleMated.timing(chatHeight, {
             toValue: reverse ? 0 : 1,
             duration: 100,
             useNativeDriver: false
@@ -481,7 +434,7 @@ function AIChat() {
     return (
     <>
     <View style={styles.container}>
-        <Animated.View style={[{bottom: heightPercentage, paddingBottom: bottomPadding}, styles.containerScreen]}>
+        <SimpleMated.View style={[{bottom: heightPercentage, paddingBottom: bottomPadding}, styles.containerScreen]}>
             <TouchableOpacity onPress={() => navigation.navigate("ModelSettings")}>
                 <Lucide name="settings" size={30} />
             </TouchableOpacity>
@@ -491,7 +444,7 @@ function AIChat() {
             </View>
 
             <ChatScreen/>
-        </Animated.View>
+        </SimpleMated.View>
     </View>
 
     <NavigationBar currentRoute="AIChat"/>

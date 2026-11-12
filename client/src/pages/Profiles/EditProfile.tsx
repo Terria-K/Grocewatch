@@ -1,5 +1,5 @@
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
-import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Modal, PermissionsAndroid, Pressable, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { RootStackParamList } from "../../components/NavigationBar";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -7,6 +7,12 @@ import { useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged, User } from "@react-native-firebase/auth";
 import { collection, doc, getDoc, getFirestore, updateDoc } from "@react-native-firebase/firestore";
+import { generateColorFromText } from "../../utils/utils";
+import { ImagePickerResponse, launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { ulid } from "react-native-ulid-jsi";
+import RNFetchBlob from 'react-native-blob-util';
+import { useSupabase } from "../../context/supabase";
+import { createClient } from "@supabase/supabase-js";
 
 type ErrorLocation = 'first_name' | 'last_name' | 'email_address';
 
@@ -15,9 +21,12 @@ type ErrorType = {
     text: string
 }
 
+
+
 function EditProfile() {
     const insets = useSafeAreaInsets();
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const [sheetVisible, setSheetVisible] = useState(false);
     const [errors, setErrors] = useState<ErrorType[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -28,6 +37,12 @@ function EditProfile() {
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
+
+    const [imageUrl, setImageUrl] = useState('');
+    const [changedImage, setChangedImage] = useState(false);
+    //const supabaseUrl = 'https://hfdixncitukkdimupxrp.supabase.co';
+    //const supabaseAnonKey = 'sb_publishable_hzGZHudpJDe3i96favXEMA_YXfPmIx6';
+    //const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     const bottomPadding = 30 + (insets.bottom > 0 ? insets.bottom : 16) + 16;
 
@@ -44,6 +59,7 @@ function EditProfile() {
                 setLastName(docUser.get("lastName"));
                 setEmail(docUser.get("emailAddress"));
                 setPhoneNumber(docUser.get("phoneNumber"));
+                setImageUrl(docUser.get("imageUrl") ?? '');
 
                 setInitializing(false);
             }
@@ -96,8 +112,24 @@ function EditProfile() {
         await updateDoc(userCollection, {
             firstName: firstName,
             lastName: lastName,
-            emailAddress: email
+            emailAddress: email,
+            imageUrl: imageUrl
         });
+
+        if (changedImage) {
+            //const image = await readImageWithFormat(imageUrl);
+            //const { data, error } = await supabase.storage.from("profiles").upload(ulid() + ".png", image.bytes, {
+            //    contentType: 'image/jpeg',
+            //    upsert: false
+            //})
+            //
+            //if (error) {
+            //    throw error;
+            //}
+
+            setChangedImage(false);
+        }
+
 
 
         setLoading(false);
@@ -123,6 +155,55 @@ function EditProfile() {
         return undefined;
     }, [errors])
 
+    async function requestCameraPermission() {
+        try {
+            const granted = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.CAMERA,
+                {
+                    title: "Camera Permission",
+                    message: "An app needs camera permission to take pictures.",
+                    buttonNegative: "Cancel",
+                    buttonPositive: "Ok"
+                }
+            )
+
+            return granted === PermissionsAndroid.RESULTS.GRANTED;
+        } catch (err) {
+            console.log(err);
+            return false;
+        }
+    }
+
+    async function handleImageResponse(response: ImagePickerResponse) {
+        if (response.didCancel) {
+            console.log("User cancelled image picker");
+        } else if (response.errorCode) {
+            console.error("Image Picker error: ", response.errorMessage);
+        } else if (response.assets && response.assets.length > 0) {
+            const uri = response.assets[0].uri;
+            if (uri) {
+                setImageUrl(uri);
+                setChangedImage(true);
+            }
+        }
+    }
+
+    async function openCamera() {
+        setSheetVisible(false);
+        const hasPermission = await requestCameraPermission();
+
+        if (!hasPermission) { return; }
+
+        launchCamera({ maxWidth: 2000, maxHeight: 2000, includeBase64: false, mediaType: 'photo'}, handleImageResponse)
+    }
+
+    async function openGallery() {
+        setSheetVisible(false);
+        launchImageLibrary({
+            mediaType: 'photo', includeBase64: false
+        }, handleImageResponse)
+    }
+
     return <View className="px-4 pt-10 gap-8 flex-1 bg-white" style={{paddingBottom: bottomPadding}}>
         <View className="flex-row items-center gap-2">
             <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -134,7 +215,17 @@ function EditProfile() {
         <View className="p-2 pt-2" style={{ backgroundColor: "#E3FFE2"}}>
             <View className="items-center">
                 <View className="border-[10px] border-white rounded-full translate-y-20">
-                    <Image source={require("../../assets/not-signed.jpg")} className="rounded-full w-[120px] h-[120px]"/>
+                    <TouchableOpacity className="rounded-full p-3 w-40 h-40 justify-center items-center" 
+                        onPress={() => setSheetVisible(true)}
+                        style={imageUrl === '' ? {
+                            backgroundColor: generateColorFromText(firstName + lastName)
+                        } : null}>
+                        {
+                            imageUrl === ''
+                                ? <Text className="font-bold text-[50px]">{firstName[0] + (lastName[0] ?? "")}</Text>
+                                : <Image className="w-40 h-40 rounded-full" source={{ uri: imageUrl }}/>
+                        }
+                    </TouchableOpacity>
                     <View className="absolute right-0 bottom-0 translate-x-[-1] translate-y-[-10] bg-green-600 p-2 rounded-full">
                         <MaterialDesignIcons name="camera" size={20} color="#FFFFFF" />
                     </View>
@@ -213,6 +304,28 @@ function EditProfile() {
             </TouchableOpacity>
         </View>
 
+        <Modal visible={sheetVisible} transparent animationType="slide" onRequestClose={() => setSheetVisible(false)}>
+            <Pressable 
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)'}}
+                className="flex-1 justify-end"
+                onPress={() => setSheetVisible(false)}>
+
+                <Pressable className="bg-white rounded-r-2xl rounded-l-2xl py-5" onPress={() => {}}>
+                    <View/>
+
+                    <Text className="text-xl font-semibold text-center mb-8">Choose Photo Source</Text>
+
+                    <TouchableOpacity className="py-4 border-b border-slate-300" onPress={openCamera}>
+                      <Text className="text-lg font-bold text-center">Take a Photo (Camera)</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity className="py-4" onPress={openGallery}>
+                      <Text className="text-lg font-bold text-center">Choose from Gallery</Text>
+                    </TouchableOpacity>
+                </Pressable>
+
+            </Pressable>
+        </Modal>
     </View>
 }
 

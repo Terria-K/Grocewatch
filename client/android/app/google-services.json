@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "236570057885-g076or4ueve1qp70rd7dcjhk6g75pfj9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.grocewatch",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
           "client_id": "236570057885-hg8v93bg7hfve5jovli4k3e9qtg01tai.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -1,0 +1,28 @@
+{
+  "MY_GROCERY_LIST": "Ang aking listahan",
+  "WELCOME": "Kamusta",
+  "TYPE_A_MESSAGE": "Magbigay ng mensahe",
+  "CLOSE": "Kanselahin",
+  "LOGOUT": "Mag Log-Out",
+
+  "PLAN_YOUR_GROCERIES": {
+    "title": "Mag-plano ng pamimilhin",
+    "description": "Malaman ang mga mungkahi base sa iyong kailangan",
+    "result": "Tulungan mo ako sa mga pamimilhin ko sa ngayong linggo. Mag-bigay ka ng mga pagkain na nakabase sa kailangan ko."
+  },
+  "ANALYZE_YOUR_LIST": {
+    "title": "Suriin mo yung listahan ko",
+    "description": "Suriin yung listahan kung balanse at kumpleto.",
+    "result": "Suriin mo yung aking listahan ng bibilhin at tignan kung balanse ba, kumpleto, at naglalaman ng lahat ng aking kailangan."
+  },
+  "SUGGEST_BUDGET_FRIENDLY_LIST": {
+    "title": "Magbigay ng payo at abot kaya na listahan",
+    "description": "Mga payo upang manatili sa loob ng iyong badyet.",
+    "result": "Magbigay ka ng listahan na abot kaya at tulungan moi ko sa pag gawa noon na aabot lang sa badyet ko."
+  },
+  "ORGANIZE_GROCERY_LIST": {
+    "title": "Ayusin ang listahan",
+    "description": "Ayusin ang listahan nang madali.",
+    "result": "Tulungan mo ko na ayusin ang listahan ko."
+  }
+}

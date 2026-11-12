@@ -53,7 +53,7 @@ export async function loadProduct() {
         const snapshot = await collection(getFirestore(), 'products').get()
 
         const prod: Product[] = [];
-        snapshot.docs.forEach((doc, index) => {
+        snapshot.docs.forEach((doc) => {
             const data = doc.data();
             if (data) {
                 prod.push(data as Product);
@@ -72,7 +72,7 @@ export const images = {
   ampalaya: require("../assets/products/ampalaya.jpg"),
   avocado: require("../assets/products/avocado.jpg"),
   banana_lakatan_: require("../assets/products/banana_lakatan.jpg"),
-  banana_latundan: require("../assets/products/banana_latundan.jpg"),
+  banana_latundan_: require("../assets/products/banana_latundan.jpg"),
   banana_saba: require("../assets/products/banana_saba.jpg"),
   bangus_large: require("../assets/products/bangus_large.jpg"),
   bangus_medium: require("../assets/products/bangus_medium.jpg"),
@@ -83,8 +83,8 @@ export const images = {
   bonito: require("../assets/products/bonito.jpg"),
   broccoli: require("../assets/products/broccoli.jpg"),
   cabbage_rare_ball: require("../assets/products/cabbage_rare_ball.jpg"),
-  cabbage_scorpio: require("../assets/products/cabbage_scorpio.jpg"),
-  cabbage: require("../assets/products/cabbage_wonder_ball.jpg"),
+  cabbage_scorpio_: require("../assets/products/cabbage_scorpio.jpg"),
+  cabbage_wonder_ball_: require("../assets/products/cabbage_wonder_ball.jpg"),
   calamansi: require("../assets/products/calamansi.jpg"),
   carrots: require("../assets/products/carrots.jpg"),
   cauliflower: require("../assets/products/cauliflower.jpg"),
@@ -114,10 +114,11 @@ export const images = {
   frozen_liempo: require("../assets/products/frozen_liempo_pork_belly.jpg"),
   galunggong_imported_medium: require("../assets/products/galunggong_imported_medium.jpg"),
   galunggong_local_medium: require("../assets/products/galunggong_local_medium.jpg"),
-  garlic_imported: require("../assets/products/garlic_imported.jpg"),
+  garlic_imported_: require("../assets/products/garlic_imported.jpg"),
   garlic_native: require("../assets/products/garlic_native.jpg"),
   ginger: require("../assets/products/ginger.jpg"),
-  habichuelas_baguio_bean: require("../assets/products/habichuelas_baguio_bean.png"),
+  habichuelas_baguio_bean_: require("../assets/products/habichuelas_baguio_bean.png"),
+  kalabasa: require("../assets/products/kalabasa.jpg"),
   lettuce_green_ice: require("../assets/products/lettuce_green_ice.jpg"),
   lettuce_iceberg: require("../assets/products/lettuce_iceberg.jpg"),
   lettuce_romaine: require("../assets/products/lettuce_romaine.jpg"),
@@ -125,13 +126,15 @@ export const images = {
   melon: require("../assets/products/melon.jpg"),
   mungbean_munggo: require("../assets/products/mungbean_munggo.jpg"),
   papaya: require("../assets/products/papaya.jpg"),
-  pechay_baguio: require("../assets/products/pechay_baguio.jpg"),
-  pechay_native: require("../assets/products/pechay_native.jpg"),
+  pechay_baguio_: require("../assets/products/pechay_baguio.jpg"),
+  pechay_native_: require("../assets/products/pechay_native.jpg"),
+  pineapple: require("../assets/products/pineapple.webp"),
   pomelo: require("../assets/products/pomelo.jpg"),
   pork_belly_liempo_: require("../assets/products/pork_belly_liempo.jpg"),
   pork_ham_kasim_: require("../assets/products/pork_ham_kasim.jpg"),
   red_onion: require("../assets/products/red_onion.jpg"),
   red_onion_imported: require("../assets/products/red_onion_imported.jpg"),
+  sayote: require("../assets/products/sayote.jpg"),
   salmon_head: require("../assets/products/salmon_head.jpg"),
   sardines_tamban: require("../assets/products/sardines_tamban.jpg"),
   sitao: require("../assets/products/sitao.jpg"),

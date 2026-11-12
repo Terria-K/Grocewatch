@@ -1,15 +1,21 @@
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
-import { useCallback } from "react";
+import { useCallback, useImperativeHandle } from "react";
 import { Pressable, View } from "react-native";
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 
 type CheckboxProps = {
     active: boolean,
     onToggle: (value: boolean) => void,
-    size: number
+    size: number,
+    ref?: React.Ref<CheckboxHandle>
 }
 
-function Checkbox({ active, onToggle, size = 30 }: CheckboxProps) {
+export type CheckboxHandle = {
+    activate: () => void,
+    deactivate: () => void,
+}
+
+function Checkbox({ active, onToggle, ref, size = 30 }: CheckboxProps) {
     const closedScale = 0;
     const openedScale = 1;
 
@@ -40,6 +46,11 @@ function Checkbox({ active, onToggle, size = 30 }: CheckboxProps) {
             onActive();
         }
     }
+
+    useImperativeHandle(ref, () => ({
+        activate: onActive,
+        deactivate: onDeactivate
+    }));
 
 
     const checkBoxStyle = useAnimatedStyle(() => {

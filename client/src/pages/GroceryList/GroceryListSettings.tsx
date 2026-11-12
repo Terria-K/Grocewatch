@@ -1,7 +1,8 @@
 import Lucide from "@react-native-vector-icons/lucide";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { UserRole } from "../../context/grocerylist";
+import { getAuth } from "@react-native-firebase/auth";
 
 type GroceryListSettingsProps = {
     onSave: (budget: string, calorie: string) => void,
@@ -15,6 +16,12 @@ type GroceryListSettingsProps = {
 function GroceryListSettings({ role, budget, calorie, onSave, onShare, onAnalyze }: GroceryListSettingsProps) {
     const [budgetState, setBudgetState] = useState(budget === 0 ? '' : budget.toString());
     const [calorieState, setCalorieState] = useState(calorie === 0 ? '' : calorie.toString());
+
+    const isNotLogin = useMemo(() => {
+        const auth = getAuth();
+
+        return !auth.currentUser;
+    }, []);
 
     return (
     <View className="p-4 gap-3">
@@ -34,9 +41,16 @@ function GroceryListSettings({ role, budget, calorie, onSave, onShare, onAnalyze
                 <Text className="font-bold text-lg">Budget Limit</Text>
                 <Text className="text-gray-500 text-sm">Set a spending limit for this list</Text>
 
-                <View className="bg-white rounded-xl border-slate-200 border-2">
+                <View 
+                    style={{ backgroundColor: role === "Viewer" ? "#e2e8f0" : "white" }}
+                    className="rounded-xl border-slate-200 border-2">
                     <TextInput 
-                        readOnly={role === 'Viewer'} className="px-4" placeholder="0" keyboardType="numeric" onChangeText={setBudgetState} value={budgetState}/>
+                        readOnly={role === 'Viewer'} 
+                        className="px-4" 
+                        placeholder="0" 
+                        keyboardType="numeric" 
+                        onChangeText={setBudgetState} 
+                        value={budgetState}/>
                 </View>
             </View>
         </View>
@@ -52,7 +66,9 @@ function GroceryListSettings({ role, budget, calorie, onSave, onShare, onAnalyze
                 <Text className="font-bold text-lg">Calorie Limit</Text>
                 <Text className="text-gray-500 text-sm">Set a calorie goal for this list</Text>
 
-                <View className="bg-white rounded-xl border-slate-200 border-2">
+                <View 
+                    style={{ backgroundColor: role === "Viewer" ? "#e2e8f0" : "white" }}
+                    className="rounded-xl border-slate-200 border-2">
                     <TextInput 
                         readOnly={role === 'Viewer'} className="px-4" placeholder="0" keyboardType="numeric" onChangeText={setCalorieState} value={calorieState}/>
                 </View>
@@ -60,17 +76,18 @@ function GroceryListSettings({ role, budget, calorie, onSave, onShare, onAnalyze
         </View>
 
         <View className="flex-row gap-1">
-            <TouchableOpacity className="flex-1 border rounded-lg px-2 py-4" onPress={onShare}>
+            <TouchableOpacity className="flex-1 border rounded-lg px-2 py-4 text-gray-200" 
+                style={{ backgroundColor: isNotLogin ? '#e5e7eb' : 'white'}} onPress={onShare} disabled={isNotLogin}>
                 <View className="flex-row items-center gap-1">
                     <View className="bg-green-300 p-2 rounded-xl">
                         <Lucide name="share-2" size={12}/>
                     </View>
-                    <Text className="text-sm">Share Grocery List</Text>
-                    <Lucide name="chevron-right" size={14}/>
+                    <Text className="text-sm" style={{color: isNotLogin ? 'gray' : 'black'}}>Share Grocery List</Text>
+                    <Lucide name="chevron-right" size={14} color={isNotLogin ? 'gray' : 'black'}/>
                 </View>
             </TouchableOpacity>
 
-            <TouchableOpacity className="flex-1 border rounded-lg px-2 py-4" onPress={onAnalyze}>
+            <TouchableOpacity className="flex-1 border rounded-lg px-2 py-4 bg-white" onPress={onAnalyze}>
                 <View className="flex-row items-center gap-1">
                     <View className="bg-green-300 p-2 rounded-xl">
                         <Lucide name="share-2" size={12}/>

@@ -24,32 +24,38 @@ function SharingConfirmScreen({ route }: SharingConfirmScreenProps) {
 
         const list: {
             listID: string,
-            users: { userID: string, role: string }[]
+            users: { userID: string, role: string }[],
+            usersID: string[]
         }[] = [];
         const snapshot = await getDocs(queries);
         snapshot.forEach(x => list.push({
             listID: x.id,
-            users: x.get("users")
+            users: x.get("users"),
+            usersID: x.get("usersID")
         }));
 
-        for (let { users, listID } of list) {
+        for (let { users, listID, usersID } of list) {
             const document = doc(groceryListRef, listID);
 
             const userList = users || [];
+            const userIDList = usersID || [];
 
             const index = userList.findIndex(x => x.userID === user.uid);
 
             if (index !== -1) {
-                userList[index].role = "Editor";
+                userList[index].role = "Viewer";
+                usersID[index] = user.uid
             } else {
                 userList.push({
                     userID: user.uid,
                     role: "Viewer"
                 });
+                usersID.push(user.uid);
             }
 
             await updateDoc(document, {
-                users: userList
+                users: userList,
+                usersID: userIDList
             });
         }
 

@@ -4,6 +4,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ChatAI from "../assets/chat_2_ai_fill.svg";
+import { ProductAddParam } from "../pages/AddProduct";
+import { Product } from "../context/products";
 
 export type RootStackParamList = {
   List: undefined;
@@ -14,9 +16,7 @@ export type RootStackParamList = {
   ManageGroceryList: {
       groceryListID: string
   } | undefined,
-  AddProduct: {
-      groceryListID: string
-  } | undefined,
+  AddProduct: { addCallback: (product: ProductAddParam[]) => Promise<void> },
   ProductHistory: {
       productID: string
   } | undefined,
@@ -28,7 +28,12 @@ export type RootStackParamList = {
   ModelSettings: undefined,
   SharingConfirmScreen: {
       inviteId: string
-  }
+  },
+  Appearance: undefined,
+  Admin: undefined,
+  AdminProduct: undefined,
+  AdminUser: undefined,
+  AdminAddOrViewProduct: { product?: Product }
 };
 
 type NavigationProp = {

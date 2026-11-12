@@ -1,0 +1,28 @@
+{
+  "MY_GROCERY_LIST": "My Grocery List",
+  "WELCOME": "Welcome",
+  "TYPE_A_MESSAGE": "Type a message",
+  "CLOSE": "Close",
+  "LOGOUT": "Log Out",
+
+  "PLAN_YOUR_GROCERIES": {
+    "title": "Plan your Groceries",
+    "description": "Get suggestions based on your needs",
+    "result": "Help me plan my groceries for this week. Suggest essential food items based on my needs and preferences."
+  },
+  "ANALYZE_YOUR_LIST": {
+    "title": "Analyze your List",
+    "description": "Check if your list is balanced and complete.",
+    "result": "Analyze my grocery list and check if it is balanced, complete, and has everything I need."
+  },
+  "SUGGEST_BUDGET_FRIENDLY_LIST": {
+    "title": "Suggest Budget-Friendly List",
+    "description": "Tips to stay within your budget.",
+    "result": "Suggest affordable grocery alternatives and help me create a grocery list that fits my budget."
+  },
+  "ORGANIZE_GROCERY_LIST": {
+    "title": "Organize Grocery List",
+    "description": "Organize your groceries with ease.",
+    "result": "Help me organize my grocery list."
+  }
+}

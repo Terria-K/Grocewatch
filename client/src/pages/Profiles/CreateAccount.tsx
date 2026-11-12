@@ -1,12 +1,14 @@
-import { createUserWithEmailAndPassword, getAuth } from "@react-native-firebase/auth";
-import { addDoc, collection, doc, getFirestore, setDoc } from "@react-native-firebase/firestore";
+import { createUserWithEmailAndPassword, getAuth, GoogleAuthProvider, signInWithCredential } from "@react-native-firebase/auth";
+import { collection, doc, getFirestore, setDoc } from "@react-native-firebase/firestore";
 import Lucide from "@react-native-vector-icons/lucide";
 import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { use, useState } from "react";
+import {  useEffect, useState } from "react";
 import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { RootStackParamList } from "../../components/NavigationBar";
+import { GoogleOneTapSignIn, isNoSavedCredentialFoundResponse, isSuccessResponse } from "react-native-nitro-google-signin";
+import Google from "../../assets/google.svg";
 
 function CreateAccount() {
     const [firstName, setFirstName] = useState('');
@@ -64,6 +66,53 @@ function CreateAccount() {
         navigation.goBack();
     }
 
+    async function createWithGoogle() {
+        await GoogleOneTapSignIn.checkPlayServices();
+
+        await GoogleOneTapSignIn.signOut();
+
+        let response = await GoogleOneTapSignIn.signIn();
+
+        if (isNoSavedCredentialFoundResponse(response)) {
+            response = await GoogleOneTapSignIn.createAccount();
+        }
+
+        if (isNoSavedCredentialFoundResponse(response)) {
+            response = await GoogleOneTapSignIn.presentExplicitSignIn();
+        }
+
+        if (isSuccessResponse(response)) {
+            const { user, idToken } = response.data;
+            const firstName = user.givenName;
+            const lastName = user.familyName;
+            const email = user.email;
+
+            const creds = GoogleAuthProvider.credential(idToken);
+
+            const credentials = await signInWithCredential(getAuth(), creds);
+
+            const uid = credentials.user.uid;
+            const db = getFirestore();
+            const userCollection = doc(collection(db, "users"), uid);
+            await setDoc(userCollection, {
+                firstName: firstName,
+                lastName: lastName ?? "",
+                emailAddress: email,
+                phoneNumber: "",
+                userid: uid
+            });
+
+            navigation.goBack();
+        }
+    }
+
+    useEffect(() => {
+        GoogleOneTapSignIn.configure({
+          webClientId: 'autoDetect',
+          offlineAccess: true,
+        });
+    }, []);
+
     return <View className="px-4 pt-10 gap-3 flex-1">
         <View className="items-center">
             <Image source={require("../../assets/grocewatch_icon.png")} className="w-40 h-40"/>
@@ -120,14 +169,17 @@ function CreateAccount() {
                         }
                     </TouchableOpacity>
 
-                    <TouchableOpacity className="border border-slate-500 bg-white px-8 py-4 rounded-full">
+                    <TouchableOpacity className="border border-slate-500 bg-white px-8 py-4 rounded-full flex-row justify-center gap-3" onPress={createWithGoogle}>
+                        <Google width={20} height={20} fill="transparent" color="white" />
                         <Text className="font-semibold text-center text-black">Continue With Google</Text>
                     </TouchableOpacity>
 
                     <View className="flex-row gap-2 justify-center">
                         <Text>Already have an account? </Text>
-                        <TouchableOpacity>
-                            <Text>Sign In</Text>
+                        <TouchableOpacity onPress={() => {
+                            navigation.popTo("Login");
+                        }}>
+                            <Text className="text-green-700">Sign In</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

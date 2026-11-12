@@ -1,18 +1,12 @@
-import { Dimensions, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import SearchBar from "../components/SearchBar";
 import NavigationBar, { RootStackParamList } from "../components/NavigationBar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { images, ProductImage, useProducts } from "../context/products";
-import { useRef, useState } from "react";
-import BottomSheet, { BottomSheetHandle } from "../components/BottomSheet";
-import MaterialDesignIcons from "@react-native-vector-icons/material-design-icons";
+import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { useGroceryList } from "../context/grocerylist";
-import { NativeStackNavigationProp, NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useUser } from "../context/user";
-
-
-const { height: screenHeight} = Dimensions.get('screen');
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { makeNameFirstCharacterUppercase } from "../utils/utils";
 
 type CategoryButtonProps = {
     name: string,
@@ -58,7 +52,7 @@ type ProductProps = {
 
 function Product({ id, name, price, category, calories, unit, onPress }: ProductProps) {
     return (
-        <TouchableOpacity className="rounded-lg border-gray-600 border p-4 flex-row items-center w-full gap-4" onPress={onPress}>
+        <TouchableOpacity className="rounded-lg border-gray-600 border p-4 flex-row items-center w-full gap-4 bg-white" onPress={onPress}>
             <View>
                 <Image 
                     source={images[id as ProductImage]}
@@ -69,25 +63,28 @@ function Product({ id, name, price, category, calories, unit, onPress }: Product
             <View className="flex-1 justify-center">
 
                 <Text className="font-bold text-lg">{name}</Text>
-                <Text className="text-green-600 text-sm">{category}</Text>
-
-                {
-                    !price ? <Text>Not Available</Text>
-                    : <Text className="mt-2">₱{price?.toFixed(2)} / {unit}</Text>
-                }
+                <Text className="text-green-600 text-sm">{makeNameFirstCharacterUppercase(category)}</Text>
             </View>
 
             <View className="w-[2px] h-full bg-gray-200 mx-3 rounded-xl"/>
 
             <View className="justify-center gap-2">
+
+                <View>
+                    <Text className="text-gray-500 text-xs">Price</Text>
+                    {
+                        !price ? <Text>Not Available</Text>
+                        : 
+                            <View>
+                                <Text className="mt-2 font-bold">₱{price?.toFixed(2)}</Text>
+                                <Text className="text-sm"> / {unit}</Text>
+                            </View>
+                    }
+                </View>
+
                 <View className="min-w-14">
                     <Text className="text-gray-500 text-xs">Calories</Text>
                     <Text className="text-green-600 text-sm">{calories} kcal</Text>
-                </View>
-
-                <View>
-                    <Text className="text-gray-500 text-xs">Stock</Text>
-                    <Text className="text-green-600 text-sm">24 kg</Text>
                 </View>
             </View>
 
@@ -95,100 +92,11 @@ function Product({ id, name, price, category, calories, unit, onPress }: Product
     )
 }
 
-type ProductListProps = {
-    popup: boolean,
-    groceryListID?: string
-}
-
-type ProductAddViewProps = {
-    groceryListID?: string,
-    productID: string,
-    onBack: () => void; 
-}
-
-function ProductAddView({ onBack, productID, groceryListID }: ProductAddViewProps) {
-    const [quantity, setQuantity] = useState('1');
-    const groceryListState = useGroceryList();
-    const user = useUser();
-
-    const addProduct = async () => {
-        let realQuantity = +quantity;
-        if (realQuantity == 0) {
-            realQuantity = 1;
-        }
-
-        if (groceryListID) {
-            groceryListState.addProduct(groceryListID, productID, realQuantity);
-            user.increasedProductTracked();
-        }
-
-        onBack();
-
-        if (groceryListID) {
-            await groceryListState.saveGroceryList(groceryListID);
-        }
-
-        await user.save();
-    }
-
-    return (
-        <View className="justify-center items-center gap-4">
-            <View className="flex-row items-center gap-4">
-                <TouchableOpacity onPress={() => setQuantity(x => {
-                    const num = +x;
-                    if ((num - 1) === 0) {
-                        return '-1';
-                    }
-
-                    return (num - 1).toString();
-                })}>
-                    <MaterialDesignIcons name="minus" size={20} />
-                </TouchableOpacity>
-
-                <TextInput 
-                    value={quantity}
-                    onChangeText={setQuantity}
-                    keyboardType="numeric"
-                    className="p-4 bg-gray-200 rounded-xl w-14 text-center text-black"
-                    placeholder="1" />
-
-                <TouchableOpacity onPress={() => setQuantity(x => {
-                    const num = +x;
-                    if ((num + 1) === 0) {
-                        return '1';
-                    }
-
-                    return (num + 1).toString();
-                })}>
-                    <MaterialDesignIcons name="plus" size={20} />
-                </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity 
-                className="rounded-lg bg-green-700 border-green-700 border-2 border-solid p-2 flex-row items-center text-center"
-                onPress={addProduct}>
-                <Text className="font-bold text-white">Add Product</Text>
-            </TouchableOpacity>
-        </View>
-    )
-}
-
-type ProductPopupProps = NativeStackScreenProps<RootStackParamList, 'AddProduct'>;
-
-export function ProductPopup({ route }: ProductPopupProps) {
-    const p = route.params;
-    const groceryListID = p?.groceryListID ?? undefined;
-
-    return <ProductList popup={true} groceryListID={groceryListID}/>
-}
-
-export function ProductList({ popup, groceryListID }: ProductListProps) {
+export function ProductList() {
     const products = useProducts(x => x.products);
     const insets = useSafeAreaInsets();
-    const bottomSheetRef = useRef<BottomSheetHandle>(null);
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     
-    const [productID, setProductID] = useState('');
     const [category, setCategory] = useState([
         {
             "name": "All",
@@ -221,11 +129,6 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
     const bottomPadding = 80 + (insets.bottom > 0 ? insets.bottom : 20) + 20;
 
     const productPressed = (id: string) => {
-        if (popup) {
-            setProductID(id);
-            bottomSheetRef.current?.openSheet();
-            return;
-        }
         navigation.navigate("ProductHistory", { productID: id });
     }
 
@@ -235,7 +138,9 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
 
     return (
         <>
-        <View className="px-4 pt-10 gap-6 flex-1">
+        <View className="px-4 pt-10 gap-6 flex-1" style={{
+            backgroundImage: 'linear-gradient(0deg, #FFFFFF, #F5FAF2, #D7EBD5, #A8CFA8)'
+        }}>
             <View className="items-center">
                 <Text className="text-2xl font-bold">Products</Text>
             </View>
@@ -263,7 +168,7 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
                 ))}
             </ScrollView>
 
-            <View className="flex-1 gap-4" style={{paddingBottom: !popup ? bottomPadding : 30}}>
+            <View className="flex-1 gap-4" style={{paddingBottom: bottomPadding }}>
                 <View>
                     <Text className="font-bold text-xl">All Products</Text>
                     <Text className="color-gray-400">{products.length} Products</Text>
@@ -285,16 +190,6 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
             </View>
 
         </View>
-
-        {popup ?
-        <BottomSheet ref={bottomSheetRef}
-            activeHeight={screenHeight * 0.45}
-            backdropColor="rgba(0,0,0,0.5)"
-            closeHeight={150}
-            backgroundColor="white"
-        >
-            <ProductAddView onBack={navigation.goBack} productID={productID} groceryListID={groceryListID}/>
-        </BottomSheet> : null}
         </>
     )
 }
@@ -302,7 +197,7 @@ export function ProductList({ popup, groceryListID }: ProductListProps) {
 function ProductPage() {
     return (
         <>
-        <ProductList popup={false}/>
+        <ProductList />
 
         <NavigationBar currentRoute="Products"/>
         </>
